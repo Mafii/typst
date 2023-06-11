@@ -517,7 +517,7 @@ fn test_part(
         writeln!(output, "Syntax Tree:\n{:#?}\n", source.root()).unwrap();
     }
 
-    let (local_compare_ref, mut ref_errors) = parse_metadata(source);
+    let (local_compare_ref, mut ref_errors, mut ref_hints) = parse_metadata(source);
     let compare_ref = local_compare_ref.unwrap_or(compare_ref);
 
     ok &= test_spans(output, source.root());
@@ -542,6 +542,19 @@ fn test_part(
         frames.clear();
     }
 
+    let mut hints: Vec<(Range<usize>, String)> = errors
+        .clone()
+        .into_iter()
+        .filter(|error| error.span.source() == id)
+        .flat_map(|error| {
+            error
+                .hints
+                .iter()
+                .map(|hint| (error.range(world), hint.to_string()))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
     // Map errors to range and message format, discard traces and errors from
     // other files.
     let mut errors: Vec<_> = errors
@@ -552,6 +565,8 @@ fn test_part(
 
     errors.sort_by_key(|error| error.0.start);
     ref_errors.sort_by_key(|error| error.0.start);
+    hints.sort_by_key(|hint| hint.0.start);
+    ref_hints.sort_by_key(|hint| hint.0.start);
 
     if errors != ref_errors {
         writeln!(output, "  Subtest {i} does not match expected errors.").unwrap();
@@ -573,12 +588,35 @@ fn test_part(
         }
     }
 
+    if hints != ref_hints {
+        writeln!(output, "  Subtest {i} does not match expected hints.").unwrap();
+
+        ok = false;
+
+        for hint in hints.iter() {
+            if !ref_hints.contains(hint) {
+                write!(output, "    Not annotated | ").unwrap();
+                print_hint(output, source, line, hint);
+            }
+        }
+
+        for hint in ref_hints.iter() {
+            if !hints.contains(hint) {
+                write!(output, "    Not emitted   | ").unwrap();
+                print_hint(output, source, line, hint);
+            }
+        }
+    }
+
     (ok, compare_ref, frames)
 }
 
-fn parse_metadata(source: &Source) -> (Option<bool>, Vec<(Range<usize>, String)>) {
+fn parse_metadata(
+    source: &Source,
+) -> (Option<bool>, Vec<(Range<usize>, String)>, Vec<(Range<usize>, String)>) {
     let mut compare_ref = None;
     let mut errors = vec![];
+    let mut hints = vec![];
 
     let lines: Vec<_> = source.text().lines().map(str::trim).collect();
     for (i, line) in lines.iter().enumerate() {
@@ -605,16 +643,22 @@ fn parse_metadata(source: &Source) -> (Option<bool>, Vec<(Range<usize>, String)>
             source.line_column_to_byte(line, column).unwrap()
         };
 
-        let Some(rest) = line.strip_prefix("// Error: ") else { continue; };
+        let error_stripped_line = line.strip_prefix("// Error: ");
+        let Some(rest) = error_stripped_line.or_else(|| line.strip_prefix("// Hint: ")) else { continue; };
         let mut s = Scanner::new(rest);
         let start = pos(&mut s);
         let end = if s.eat_if('-') { pos(&mut s) } else { start };
         let range = start..end;
 
-        errors.push((range, s.after().trim().to_string()));
+        let instruction = (range, s.after().trim().to_string());
+        if error_stripped_line.is_some() {
+            errors.push(instruction);
+        } else {
+            hints.push(instruction);
+        }
     }
 
-    (compare_ref, errors)
+    (compare_ref, errors, hints)
 }
 
 fn print_error(
@@ -628,6 +672,20 @@ fn print_error(
     let end_line = 1 + line + source.byte_to_line(range.end).unwrap();
     let end_col = 1 + source.byte_to_column(range.end).unwrap();
     writeln!(output, "Error: {start_line}:{start_col}-{end_line}:{end_col}: {message}")
+        .unwrap();
+}
+
+fn print_hint(
+    output: &mut String,
+    source: &Source,
+    line: usize,
+    (range, message): &(Range<usize>, String),
+) {
+    let start_line = 1 + line + source.byte_to_line(range.start).unwrap();
+    let start_col = 1 + source.byte_to_column(range.start).unwrap();
+    let end_line = 1 + line + source.byte_to_line(range.end).unwrap();
+    let end_col = 1 + source.byte_to_column(range.end).unwrap();
+    writeln!(output, "Hint: {start_line}:{start_col}-{end_line}:{end_col}: {message}")
         .unwrap();
 }
 
