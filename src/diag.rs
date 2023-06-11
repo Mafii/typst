@@ -73,6 +73,8 @@ pub struct SourceError {
     pub message: EcoString,
     /// The trace of function calls leading to the error.
     pub trace: Vec<Spanned<Tracepoint>>,
+    /// Additonal hints to the user, indicating how this error could be avoided or worked around.
+    pub hints: Vec<EcoString>,
 }
 
 impl SourceError {
@@ -83,6 +85,7 @@ impl SourceError {
             pos: ErrorPos::Full,
             trace: vec![],
             message: message.into(),
+            hints: vec![],
         }
     }
 
@@ -102,6 +105,11 @@ impl SourceError {
             ErrorPos::Start => full.start..full.start,
             ErrorPos::End => full.end..full.end,
         }
+    }
+
+    pub fn with_hint(mut self, hint: impl Into<EcoString>) -> Self {
+        self.hints.push(hint.into());
+        self
     }
 }
 
@@ -182,6 +190,22 @@ where
 {
     fn at(self, span: Span) -> SourceResult<T> {
         self.map_err(|message| Box::new(vec![SourceError::new(span, message)]))
+    }
+}
+
+pub trait WithHint<T, H> {
+    fn at_with_hint(self, span: Span, hint: H) -> SourceResult<T>;
+}
+
+impl<T, H, S> WithHint<T, H> for Result<T, S>
+where
+    S: Into<EcoString>,
+    H: Into<EcoString>,
+{
+    fn at_with_hint(self, span: Span, hint: H) -> SourceResult<T> {
+        self.map_err(|message| {
+            Box::new(vec![SourceError::new(span, message).with_hint(hint)])
+        })
     }
 }
 
