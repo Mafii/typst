@@ -517,7 +517,12 @@ fn test_part(
         writeln!(output, "Syntax Tree:\n{:#?}\n", source.root()).unwrap();
     }
 
-    let (local_compare_ref, mut ref_errors, mut ref_hints) = parse_metadata(source);
+    let Metadata {
+        compare_ref: local_compare_ref,
+        validate_hints,
+        expected_errors: mut ref_errors,
+        expected_hints: mut ref_hints,
+    } = parse_metadata(source);
     let compare_ref = local_compare_ref.unwrap_or(compare_ref);
 
     ok &= test_spans(output, source.root());
@@ -532,9 +537,9 @@ fn test_part(
         writeln!(output, "Model:\n{:#?}\n", module.content()).unwrap();
     }
 
-    let (mut frames, errors) = match typst::compile(world) {
+    let (mut frames, actual_errors) = match typst::compile(world) {
         Ok(document) => (document.pages, vec![]),
-        Err(errors) => (vec![], *errors),
+        Err(actual_errors) => (vec![], *actual_errors),
     };
 
     // Don't retain frames if we don't wanna compare with reference images.
@@ -542,22 +547,10 @@ fn test_part(
         frames.clear();
     }
 
-    let mut hints: Vec<(Range<usize>, String)> = errors
-        .clone()
-        .into_iter()
-        .filter(|error| error.span.source() == id)
-        .flat_map(|error| {
-            error
-                .hints
-                .iter()
-                .map(|hint| (error.range(world), hint.to_string()))
-                .collect::<Vec<_>>()
-        })
-        .collect();
-
     // Map errors to range and message format, discard traces and errors from
     // other files.
-    let mut errors: Vec<_> = errors
+    let mut errors: Vec<_> = actual_errors
+        .clone()
         .into_iter()
         .filter(|error| error.span.source() == id)
         .map(|error| (error.range(world), error.message.replace('\\', "/")))
@@ -565,8 +558,6 @@ fn test_part(
 
     errors.sort_by_key(|error| error.0.start);
     ref_errors.sort_by_key(|error| error.0.start);
-    hints.sort_by_key(|hint| hint.0.start);
-    ref_hints.sort_by_key(|hint| hint.0.start);
 
     if errors != ref_errors {
         writeln!(output, "  Subtest {i} does not match expected errors.").unwrap();
@@ -588,22 +579,40 @@ fn test_part(
         }
     }
 
-    if hints != ref_hints {
-        writeln!(output, "  Subtest {i} does not match expected hints.").unwrap();
+    if validate_hints.unwrap_or(true) {
+        let mut hints: Vec<(Range<usize>, String)> = actual_errors
+            .clone()
+            .into_iter()
+            .filter(|error| error.span.source() == id)
+            .flat_map(|error| {
+                error
+                    .hints
+                    .iter()
+                    .map(|hint| (error.range(world), hint.to_string()))
+                    .collect::<Vec<_>>()
+            })
+            .collect();
 
-        ok = false;
+        hints.sort_by_key(|hint| hint.0.start);
+        ref_hints.sort_by_key(|hint| hint.0.start);
 
-        for hint in hints.iter() {
-            if !ref_hints.contains(hint) {
-                write!(output, "    Not annotated | ").unwrap();
-                print_hint(output, source, line, hint);
+        if hints != ref_hints {
+            writeln!(output, "  Subtest {i} does not match expected hints.").unwrap();
+
+            ok = false;
+
+            for hint in hints.iter() {
+                if !ref_hints.contains(hint) {
+                    write!(output, "    Not annotated | ").unwrap();
+                    print_hint(output, source, line, hint);
+                }
             }
-        }
 
-        for hint in ref_hints.iter() {
-            if !hints.contains(hint) {
-                write!(output, "    Not emitted   | ").unwrap();
-                print_hint(output, source, line, hint);
+            for hint in ref_hints.iter() {
+                if !hints.contains(hint) {
+                    write!(output, "    Not emitted   | ").unwrap();
+                    print_hint(output, source, line, hint);
+                }
             }
         }
     }
@@ -611,10 +620,16 @@ fn test_part(
     (ok, compare_ref, frames)
 }
 
-fn parse_metadata(
-    source: &Source,
-) -> (Option<bool>, Vec<(Range<usize>, String)>, Vec<(Range<usize>, String)>) {
+struct Metadata {
+    compare_ref: Option<bool>,
+    validate_hints: Option<bool>,
+    expected_errors: Vec<(Range<usize>, String)>,
+    expected_hints: Vec<(Range<usize>, String)>,
+}
+
+fn parse_metadata(source: &Source) -> Metadata {
     let mut compare_ref = None;
+    let mut validate_hints = None;
     let mut errors = vec![];
     let mut hints = vec![];
 
@@ -626,6 +641,14 @@ fn parse_metadata(
 
         if line.starts_with("// Ref: true") {
             compare_ref = Some(true);
+        }
+
+        if line.starts_with("// Hints: false") {
+            validate_hints = Some(false);
+        }
+
+        if line.starts_with("// Hints: true") {
+            validate_hints = Some(true);
         }
 
         fn num(s: &mut Scanner) -> usize {
@@ -658,7 +681,12 @@ fn parse_metadata(
         }
     }
 
-    (compare_ref, errors, hints)
+    Metadata {
+        compare_ref,
+        validate_hints,
+        expected_errors: errors,
+        expected_hints: hints,
+    }
 }
 
 fn print_error(
