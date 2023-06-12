@@ -47,7 +47,7 @@ pub fn measure(
     styles: Styles,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Dict> {
+) -> SourceResults<Dict> {
     let pod = Regions::one(Axes::splat(Abs::inf()), Axes::splat(false));
     let styles = StyleChain::new(&styles);
     let frame = content.measure(&mut vm.vt, styles, pod)?.into_frame();

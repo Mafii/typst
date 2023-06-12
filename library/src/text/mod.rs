@@ -520,7 +520,7 @@ impl TextElem {
 }
 
 impl Construct for TextElem {
-    fn construct(_: &mut Vm, args: &mut Args) -> SourceResult<Content> {
+    fn construct(_: &mut Vm, args: &mut Args) -> SourceResults<Content> {
         // The text constructor is special: It doesn't create a text element.
         // Instead, it leaves the passed argument structurally unchanged, but
         // styles all text in it.

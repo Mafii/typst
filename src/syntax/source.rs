@@ -11,7 +11,7 @@ use unscanny::Scanner;
 use super::ast::Markup;
 use super::reparser::reparse;
 use super::{is_newline, parse, LinkedNode, Span, SyntaxNode};
-use crate::diag::SourceResult;
+use crate::diag::SourceResults;
 use crate::util::{PathExt, StrExt};
 
 /// A source file.
@@ -66,7 +66,7 @@ impl Source {
     }
 
     /// The root node of the file's typed abstract syntax tree.
-    pub fn ast(&self) -> SourceResult<Markup> {
+    pub fn ast(&self) -> SourceResults<Markup> {
         let errors = self.root.errors();
         if errors.is_empty() {
             Ok(self.root.cast().expect("root node must be markup"))

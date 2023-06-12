@@ -59,7 +59,7 @@ pub struct FootnoteElem {
 }
 
 impl Synthesize for FootnoteElem {
-    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         self.push_numbering(self.numbering(styles));
         Ok(())
     }
@@ -67,7 +67,7 @@ impl Synthesize for FootnoteElem {
 
 impl Show for FootnoteElem {
     #[tracing::instrument(name = "FootnoteElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let loc = self.0.location().unwrap();
         let numbering = self.numbering(styles);
         let counter = Counter::of(Self::func());
@@ -181,7 +181,7 @@ pub struct FootnoteEntry {
 }
 
 impl Show for FootnoteEntry {
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let note = self.note();
         let number_gap = Em::new(0.05);
         let numbering = note.numbering(StyleChain::default());

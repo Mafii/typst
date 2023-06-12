@@ -106,7 +106,7 @@ pub struct StrongElem {
 
 impl Show for StrongElem {
     #[tracing::instrument(name = "StrongElem::show", skip_all)]
-    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         Ok(self.body().styled(TextElem::set_delta(Delta(self.delta(styles)))))
     }
 }
@@ -164,7 +164,7 @@ pub struct EmphElem {
 
 impl Show for EmphElem {
     #[tracing::instrument(name = "EmphElem::show", skip(self))]
-    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         Ok(self.body().styled(TextElem::set_emph(Toggle)))
     }
 }

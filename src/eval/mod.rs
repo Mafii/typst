@@ -63,7 +63,7 @@ use unicode_segmentation::UnicodeSegmentation;
 
 use self::func::{CapturesVisitor, Closure};
 use crate::diag::{
-    bail, error, At, SourceError, SourceResult, StrResult, Trace, Tracepoint,
+    bail, error, At, SourceError, SourceResults, StrResult, Trace, Tracepoint,
 };
 use crate::model::{
     Content, Introspector, Label, Locator, Recipe, ShowableSelector, Styles, Transform,
@@ -87,7 +87,7 @@ pub fn eval(
     route: Tracked<Route>,
     tracer: TrackedMut<Tracer>,
     source: &Source,
-) -> SourceResult<Module> {
+) -> SourceResults<Module> {
     // Prevent cyclic evaluation.
     let id = source.id();
     let path = if id.is_detached() { Path::new("") } else { world.source(id).path() };
@@ -139,7 +139,7 @@ pub fn eval_string(
     world: Tracked<dyn World + '_>,
     code: &str,
     span: Span,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let mut root = parse_code(code);
     root.synthesize(span);
 
@@ -375,13 +375,13 @@ pub(super) trait Eval {
     type Output;
 
     /// Evaluate the expression to the output value.
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output>;
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output>;
 }
 
 impl Eval for ast::Markup {
     type Output = Content;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         eval_markup(vm, &mut self.exprs())
     }
 }
@@ -390,7 +390,7 @@ impl Eval for ast::Markup {
 fn eval_markup(
     vm: &mut Vm,
     exprs: &mut impl Iterator<Item = ast::Expr>,
-) -> SourceResult<Content> {
+) -> SourceResults<Content> {
     let flow = vm.flow.take();
     let mut seq = Vec::with_capacity(exprs.size_hint().1.unwrap_or_default());
 
@@ -441,7 +441,7 @@ impl Eval for ast::Expr {
     type Output = Value;
 
     #[tracing::instrument(name = "Expr::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let span = self.span();
         let forbidden = |name| {
             error!(span, "{} is only allowed directly in code and content blocks", name)
@@ -515,7 +515,7 @@ impl Eval for ast::Expr {
 }
 
 impl ast::Expr {
-    fn eval_display(&self, vm: &mut Vm) -> SourceResult<Content> {
+    fn eval_display(&self, vm: &mut Vm) -> SourceResults<Content> {
         Ok(self.eval(vm)?.display().spanned(self.span()))
     }
 }
@@ -524,7 +524,7 @@ impl Eval for ast::Text {
     type Output = Content;
 
     #[tracing::instrument(name = "Text::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.text)(self.get().clone()))
     }
 }
@@ -533,7 +533,7 @@ impl Eval for ast::Space {
     type Output = Content;
 
     #[tracing::instrument(name = "Space::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.space)())
     }
 }
@@ -542,7 +542,7 @@ impl Eval for ast::Linebreak {
     type Output = Content;
 
     #[tracing::instrument(name = "Linebreak::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.linebreak)())
     }
 }
@@ -551,7 +551,7 @@ impl Eval for ast::Parbreak {
     type Output = Content;
 
     #[tracing::instrument(name = "Parbreak::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.parbreak)())
     }
 }
@@ -560,7 +560,7 @@ impl Eval for ast::Escape {
     type Output = Value;
 
     #[tracing::instrument(name = "Escape::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Symbol(Symbol::new(self.get())))
     }
 }
@@ -569,7 +569,7 @@ impl Eval for ast::Shorthand {
     type Output = Value;
 
     #[tracing::instrument(name = "Shorthand::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Symbol(Symbol::new(self.get())))
     }
 }
@@ -578,7 +578,7 @@ impl Eval for ast::SmartQuote {
     type Output = Content;
 
     #[tracing::instrument(name = "SmartQuote::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.smart_quote)(self.double()))
     }
 }
@@ -587,7 +587,7 @@ impl Eval for ast::Strong {
     type Output = Content;
 
     #[tracing::instrument(name = "Strong::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.strong)(self.body().eval(vm)?))
     }
 }
@@ -596,7 +596,7 @@ impl Eval for ast::Emph {
     type Output = Content;
 
     #[tracing::instrument(name = "Emph::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.emph)(self.body().eval(vm)?))
     }
 }
@@ -605,7 +605,7 @@ impl Eval for ast::Raw {
     type Output = Content;
 
     #[tracing::instrument(name = "Raw::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let text = self.text();
         let lang = self.lang().map(Into::into);
         let block = self.block();
@@ -617,7 +617,7 @@ impl Eval for ast::Link {
     type Output = Content;
 
     #[tracing::instrument(name = "Link::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.link)(self.get().clone()))
     }
 }
@@ -626,7 +626,7 @@ impl Eval for ast::Label {
     type Output = Value;
 
     #[tracing::instrument(name = "Label::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Label(Label(self.get().into())))
     }
 }
@@ -635,7 +635,7 @@ impl Eval for ast::Ref {
     type Output = Content;
 
     #[tracing::instrument(name = "Ref::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let label = Label(self.target().into());
         let supplement = self.supplement().map(|block| block.eval(vm)).transpose()?;
         Ok((vm.items.reference)(label, supplement))
@@ -646,7 +646,7 @@ impl Eval for ast::Heading {
     type Output = Content;
 
     #[tracing::instrument(name = "Heading::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let level = self.level();
         let body = self.body().eval(vm)?;
         Ok((vm.items.heading)(level, body))
@@ -657,7 +657,7 @@ impl Eval for ast::ListItem {
     type Output = Content;
 
     #[tracing::instrument(name = "ListItem::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.list_item)(self.body().eval(vm)?))
     }
 }
@@ -666,7 +666,7 @@ impl Eval for ast::EnumItem {
     type Output = Content;
 
     #[tracing::instrument(name = "EnumItem::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let number = self.number();
         let body = self.body().eval(vm)?;
         Ok((vm.items.enum_item)(number, body))
@@ -677,7 +677,7 @@ impl Eval for ast::TermItem {
     type Output = Content;
 
     #[tracing::instrument(name = "TermItem::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let term = self.term().eval(vm)?;
         let description = self.description().eval(vm)?;
         Ok((vm.items.term_item)(term, description))
@@ -688,7 +688,7 @@ impl Eval for ast::Equation {
     type Output = Content;
 
     #[tracing::instrument(name = "Equation::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let body = self.body().eval(vm)?;
         let block = self.block();
         Ok((vm.items.equation)(body, block))
@@ -699,11 +699,11 @@ impl Eval for ast::Math {
     type Output = Content;
 
     #[tracing::instrument(name = "Math::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Content::sequence(
             self.exprs()
                 .map(|expr| expr.eval_display(vm))
-                .collect::<SourceResult<Vec<_>>>()?,
+                .collect::<SourceResults<Vec<_>>>()?,
         ))
     }
 }
@@ -712,7 +712,7 @@ impl Eval for ast::MathIdent {
     type Output = Value;
 
     #[tracing::instrument(name = "MathIdent::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         vm.scopes.get_in_math(self).cloned().at(self.span())
     }
 }
@@ -721,7 +721,7 @@ impl Eval for ast::MathAlignPoint {
     type Output = Content;
 
     #[tracing::instrument(name = "MathAlignPoint::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         Ok((vm.items.math_align_point)())
     }
 }
@@ -730,7 +730,7 @@ impl Eval for ast::MathDelimited {
     type Output = Content;
 
     #[tracing::instrument(name = "MathDelimited::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let open = self.open().eval_display(vm)?;
         let body = self.body().eval(vm)?;
         let close = self.close().eval_display(vm)?;
@@ -742,7 +742,7 @@ impl Eval for ast::MathAttach {
     type Output = Content;
 
     #[tracing::instrument(name = "MathAttach::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let base = self.base().eval_display(vm)?;
         let top = self.top().map(|expr| expr.eval_display(vm)).transpose()?;
         let bottom = self.bottom().map(|expr| expr.eval_display(vm)).transpose()?;
@@ -754,7 +754,7 @@ impl Eval for ast::MathFrac {
     type Output = Content;
 
     #[tracing::instrument(name = "MathFrac::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let num = self.num().eval_display(vm)?;
         let denom = self.denom().eval_display(vm)?;
         Ok((vm.items.math_frac)(num, denom))
@@ -764,7 +764,7 @@ impl Eval for ast::MathFrac {
 impl Eval for ast::MathRoot {
     type Output = Content;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let index = self.index().map(|i| (vm.items.text)(eco_format!("{i}")));
         let radicand = self.radicand().eval_display(vm)?;
         Ok((vm.items.math_root)(index, radicand))
@@ -775,7 +775,7 @@ impl Eval for ast::Ident {
     type Output = Value;
 
     #[tracing::instrument(name = "Ident::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         vm.scopes.get(self).cloned().at(self.span())
     }
 }
@@ -784,7 +784,7 @@ impl Eval for ast::None {
     type Output = Value;
 
     #[tracing::instrument(name = "None::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::None)
     }
 }
@@ -793,7 +793,7 @@ impl Eval for ast::Auto {
     type Output = Value;
 
     #[tracing::instrument(name = "Auto::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Auto)
     }
 }
@@ -802,7 +802,7 @@ impl Eval for ast::Bool {
     type Output = Value;
 
     #[tracing::instrument(name = "Bool::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Bool(self.get()))
     }
 }
@@ -811,7 +811,7 @@ impl Eval for ast::Int {
     type Output = Value;
 
     #[tracing::instrument(name = "Int::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Int(self.get()))
     }
 }
@@ -820,7 +820,7 @@ impl Eval for ast::Float {
     type Output = Value;
 
     #[tracing::instrument(name = "Float::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Float(self.get()))
     }
 }
@@ -829,7 +829,7 @@ impl Eval for ast::Numeric {
     type Output = Value;
 
     #[tracing::instrument(name = "Numeric::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::numeric(self.get()))
     }
 }
@@ -838,7 +838,7 @@ impl Eval for ast::Str {
     type Output = Value;
 
     #[tracing::instrument(name = "Str::eval", skip_all)]
-    fn eval(&self, _: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, _: &mut Vm) -> SourceResults<Self::Output> {
         Ok(Value::Str(self.get().into()))
     }
 }
@@ -847,7 +847,7 @@ impl Eval for ast::CodeBlock {
     type Output = Value;
 
     #[tracing::instrument(name = "CodeBlock::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         vm.scopes.enter();
         let output = self.body().eval(vm)?;
         vm.scopes.exit();
@@ -858,7 +858,7 @@ impl Eval for ast::CodeBlock {
 impl Eval for ast::Code {
     type Output = Value;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         eval_code(vm, &mut self.exprs())
     }
 }
@@ -867,7 +867,7 @@ impl Eval for ast::Code {
 fn eval_code(
     vm: &mut Vm,
     exprs: &mut impl Iterator<Item = ast::Expr>,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let flow = vm.flow.take();
     let mut output = Value::None;
 
@@ -913,7 +913,7 @@ impl Eval for ast::ContentBlock {
     type Output = Content;
 
     #[tracing::instrument(name = "ContentBlock::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         vm.scopes.enter();
         let content = self.body().eval(vm)?;
         vm.scopes.exit();
@@ -925,7 +925,7 @@ impl Eval for ast::Parenthesized {
     type Output = Value;
 
     #[tracing::instrument(name = "Parenthesized::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         self.expr().eval(vm)
     }
 }
@@ -934,7 +934,7 @@ impl Eval for ast::Array {
     type Output = Array;
 
     #[tracing::instrument(skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let items = self.items();
 
         let mut vec = EcoVec::with_capacity(items.size_hint().0);
@@ -957,7 +957,7 @@ impl Eval for ast::Dict {
     type Output = Dict;
 
     #[tracing::instrument(skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let mut map = indexmap::IndexMap::new();
 
         for item in self.items() {
@@ -988,7 +988,7 @@ impl Eval for ast::Unary {
     type Output = Value;
 
     #[tracing::instrument(name = "Unary::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = self.expr().eval(vm)?;
         let result = match self.op() {
             ast::UnOp::Pos => ops::pos(value),
@@ -1003,7 +1003,7 @@ impl Eval for ast::Binary {
     type Output = Value;
 
     #[tracing::instrument(name = "Binary::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         match self.op() {
             ast::BinOp::Add => self.apply(vm, ops::add),
             ast::BinOp::Sub => self.apply(vm, ops::sub),
@@ -1034,7 +1034,7 @@ impl ast::Binary {
         &self,
         vm: &mut Vm,
         op: fn(Value, Value) -> StrResult<Value>,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let lhs = self.lhs().eval(vm)?;
 
         // Short-circuit boolean operations.
@@ -1053,7 +1053,7 @@ impl ast::Binary {
         &self,
         vm: &mut Vm,
         op: fn(Value, Value) -> StrResult<Value>,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let rhs = self.rhs().eval(vm)?;
         let lhs = self.lhs();
 
@@ -1078,7 +1078,7 @@ impl Eval for ast::FieldAccess {
     type Output = Value;
 
     #[tracing::instrument(name = "FieldAccess::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = self.target().eval(vm)?;
         let field = self.field();
         value.field(&field).at(field.span())
@@ -1089,7 +1089,7 @@ impl Eval for ast::FuncCall {
     type Output = Value;
 
     #[tracing::instrument(name = "FuncCall::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let span = self.span();
         if vm.depth >= MAX_CALL_DEPTH {
             bail!(span, "maximum function call depth exceeded");
@@ -1199,7 +1199,7 @@ fn in_math(expr: &ast::Expr) -> bool {
 impl Eval for ast::Args {
     type Output = Args;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let mut items = EcoVec::new();
 
         for arg in self.items() {
@@ -1249,7 +1249,7 @@ impl Eval for ast::Closure {
     type Output = Value;
 
     #[tracing::instrument(name = "Closure::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         // The closure's name is defined by its let binding if there's one.
         let name = self.name();
 
@@ -1292,9 +1292,9 @@ impl ast::Pattern {
         value: Array,
         f: F,
         destruct: &ast::Destructuring,
-    ) -> SourceResult<Value>
+    ) -> SourceResults<Value>
     where
-        F: Fn(&mut Vm, ast::Expr, Value) -> SourceResult<Value>,
+        F: Fn(&mut Vm, ast::Expr, Value) -> SourceResults<Value>,
     {
         let mut i = 0;
         let len = value.as_slice().len();
@@ -1344,9 +1344,9 @@ impl ast::Pattern {
         dict: Dict,
         f: F,
         destruct: &ast::Destructuring,
-    ) -> SourceResult<Value>
+    ) -> SourceResults<Value>
     where
-        F: Fn(&mut Vm, ast::Expr, Value) -> SourceResult<Value>,
+        F: Fn(&mut Vm, ast::Expr, Value) -> SourceResults<Value>,
     {
         let mut sink = None;
         let mut used = HashSet::new();
@@ -1392,9 +1392,9 @@ impl ast::Pattern {
 
     /// Destruct the given value into the pattern and apply the function to each binding.
     #[tracing::instrument(skip_all)]
-    fn apply<T>(&self, vm: &mut Vm, value: Value, f: T) -> SourceResult<Value>
+    fn apply<T>(&self, vm: &mut Vm, value: Value, f: T) -> SourceResults<Value>
     where
-        T: Fn(&mut Vm, ast::Expr, Value) -> SourceResult<Value>,
+        T: Fn(&mut Vm, ast::Expr, Value) -> SourceResults<Value>,
     {
         match self {
             ast::Pattern::Normal(expr) => {
@@ -1411,7 +1411,7 @@ impl ast::Pattern {
     }
 
     /// Destruct the value into the pattern by binding.
-    pub fn define(&self, vm: &mut Vm, value: Value) -> SourceResult<Value> {
+    pub fn define(&self, vm: &mut Vm, value: Value) -> SourceResults<Value> {
         self.apply(vm, value, |vm, expr, value| match expr {
             ast::Expr::Ident(ident) => {
                 vm.define(ident, value);
@@ -1422,7 +1422,7 @@ impl ast::Pattern {
     }
 
     /// Destruct the value into the pattern by assignment.
-    pub fn assign(&self, vm: &mut Vm, value: Value) -> SourceResult<Value> {
+    pub fn assign(&self, vm: &mut Vm, value: Value) -> SourceResults<Value> {
         self.apply(vm, value, |vm, expr, value| {
             let location = expr.access(vm)?;
             *location = value;
@@ -1435,7 +1435,7 @@ impl Eval for ast::LetBinding {
     type Output = Value;
 
     #[tracing::instrument(name = "LetBinding::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = match self.init() {
             Some(expr) => expr.eval(vm)?,
             None => Value::None,
@@ -1454,7 +1454,7 @@ impl Eval for ast::LetBinding {
 impl Eval for ast::DestructAssignment {
     type Output = Value;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = self.value().eval(vm)?;
         self.pattern().assign(vm, value)?;
         Ok(Value::None)
@@ -1464,7 +1464,7 @@ impl Eval for ast::DestructAssignment {
 impl Eval for ast::SetRule {
     type Output = Styles;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         if let Some(condition) = self.condition() {
             if !condition.eval(vm)?.cast::<bool>().at(condition.span())? {
                 return Ok(Styles::new());
@@ -1489,7 +1489,7 @@ impl Eval for ast::SetRule {
 impl Eval for ast::ShowRule {
     type Output = Recipe;
 
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let selector = self
             .selector()
             .map(|sel| sel.eval(vm)?.cast::<ShowableSelector>().at(sel.span()))
@@ -1512,7 +1512,7 @@ impl Eval for ast::Conditional {
     type Output = Value;
 
     #[tracing::instrument(name = "Conditional::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let condition = self.condition();
         if condition.eval(vm)?.cast::<bool>().at(condition.span())? {
             self.if_body().eval(vm)
@@ -1528,7 +1528,7 @@ impl Eval for ast::WhileLoop {
     type Output = Value;
 
     #[tracing::instrument(name = "WhileLoop::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let flow = vm.flow.take();
         let mut output = Value::None;
         let mut i = 0;
@@ -1596,7 +1596,7 @@ impl Eval for ast::ForLoop {
     type Output = Value;
 
     #[tracing::instrument(name = "ForLoop::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let flow = vm.flow.take();
         let mut output = Value::None;
 
@@ -1666,7 +1666,7 @@ fn apply_imports<V: IntoValue>(
     source_value: V,
     name: impl Fn(&V) -> EcoString,
     scope: impl Fn(&V) -> &Scope,
-) -> SourceResult<()> {
+) -> SourceResults<()> {
     match imports {
         None => {
             vm.scopes.top.define(name(&source_value), source_value);
@@ -1699,7 +1699,7 @@ impl Eval for ast::ModuleImport {
     type Output = Value;
 
     #[tracing::instrument(name = "ModuleImport::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let span = self.source().span();
         let source = self.source().eval(vm)?;
         if let Value::Func(func) = source {
@@ -1732,7 +1732,7 @@ impl Eval for ast::ModuleInclude {
     type Output = Content;
 
     #[tracing::instrument(name = "ModuleInclude::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let span = self.source().span();
         let source = self.source().eval(vm)?;
         let module = import(vm, source, span, false)?;
@@ -1746,7 +1746,7 @@ fn import(
     source: Value,
     span: Span,
     accept_functions: bool,
-) -> SourceResult<Module> {
+) -> SourceResults<Module> {
     let path = match source {
         Value::Str(path) => path,
         Value::Module(module) => return Ok(module),
@@ -1780,7 +1780,7 @@ impl Eval for ast::LoopBreak {
     type Output = Value;
 
     #[tracing::instrument(name = "LoopBreak::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         if vm.flow.is_none() {
             vm.flow = Some(FlowEvent::Break(self.span()));
         }
@@ -1792,7 +1792,7 @@ impl Eval for ast::LoopContinue {
     type Output = Value;
 
     #[tracing::instrument(name = "LoopContinue::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         if vm.flow.is_none() {
             vm.flow = Some(FlowEvent::Continue(self.span()));
         }
@@ -1804,7 +1804,7 @@ impl Eval for ast::FuncReturn {
     type Output = Value;
 
     #[tracing::instrument(name = "FuncReturn::eval", skip_all)]
-    fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
+    fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = self.body().map(|body| body.eval(vm)).transpose()?;
         if vm.flow.is_none() {
             vm.flow = Some(FlowEvent::Return(self.span(), value));
@@ -1816,11 +1816,11 @@ impl Eval for ast::FuncReturn {
 /// Access an expression mutably.
 trait Access {
     /// Access the value.
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value>;
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value>;
 }
 
 impl Access for ast::Expr {
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
         match self {
             Self::Ident(v) => v.access(vm),
             Self::Parenthesized(v) => v.access(vm),
@@ -1835,7 +1835,7 @@ impl Access for ast::Expr {
 }
 
 impl Access for ast::Ident {
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
         let span = self.span();
         let value = vm.scopes.get_mut(self).at(span)?;
         if vm.traced == Some(span) {
@@ -1846,19 +1846,19 @@ impl Access for ast::Ident {
 }
 
 impl Access for ast::Parenthesized {
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
         self.expr().access(vm)
     }
 }
 
 impl Access for ast::FieldAccess {
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
         self.access_dict(vm)?.at_mut(&self.field().take()).at(self.span())
     }
 }
 
 impl ast::FieldAccess {
-    fn access_dict<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Dict> {
+    fn access_dict<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Dict> {
         match self.target().access(vm)? {
             Value::Dict(dict) => Ok(dict),
             value => bail!(
@@ -1871,7 +1871,7 @@ impl ast::FieldAccess {
 }
 
 impl Access for ast::FuncCall {
-    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
+    fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
         if let ast::Expr::FieldAccess(access) = self.callee() {
             let method = access.field().take();
             if methods::is_accessor(&method) {

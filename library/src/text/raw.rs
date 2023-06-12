@@ -146,7 +146,7 @@ impl RawElem {
 }
 
 impl Synthesize for RawElem {
-    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         self.push_lang(self.lang(styles));
         Ok(())
     }
@@ -154,7 +154,7 @@ impl Synthesize for RawElem {
 
 impl Show for RawElem {
     #[tracing::instrument(name = "RawElem::show", skip_all)]
-    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let text = self.text();
         let lang = self.lang(styles).as_ref().map(|s| s.to_lowercase());
         let foreground = THEME

@@ -39,7 +39,7 @@ pub struct RootElem {
 
 impl LayoutMath for RootElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         layout(ctx, self.index(ctx.styles()).as_ref(), &self.radicand(), self.span())
     }
 }
@@ -52,7 +52,7 @@ fn layout(
     mut index: Option<&Content>,
     radicand: &Content,
     span: Span,
-) -> SourceResult<()> {
+) -> SourceResults<()> {
     let gap = scaled!(
         ctx,
         text: radical_vertical_gap,

@@ -128,7 +128,7 @@ pub struct RefElem {
 }
 
 impl Synthesize for RefElem {
-    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         let citation = self.to_citation(vt, styles)?;
         self.push_citation(Some(citation));
         self.push_element(None);
@@ -147,7 +147,7 @@ impl Synthesize for RefElem {
 
 impl Show for RefElem {
     #[tracing::instrument(name = "RefElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         if !vt.introspector.init() {
             return Ok(Content::empty());
         }
@@ -216,7 +216,7 @@ impl Show for RefElem {
 
 impl RefElem {
     /// Turn the reference into a citation.
-    pub fn to_citation(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<CiteElem> {
+    pub fn to_citation(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<CiteElem> {
         let mut elem = CiteElem::new(vec![self.target().0]);
         elem.0.set_location(self.0.location().unwrap());
         elem.synthesize(vt, styles)?;
@@ -241,7 +241,7 @@ impl Supplement {
         &self,
         vt: &mut Vt,
         args: impl IntoIterator<Item = T>,
-    ) -> SourceResult<Content> {
+    ) -> SourceResults<Content> {
         Ok(match self {
             Supplement::Content(content) => content.clone(),
             Supplement::Func(func) => func.call_vt(vt, args)?.display(),

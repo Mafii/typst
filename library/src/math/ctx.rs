@@ -96,7 +96,7 @@ impl<'a, 'b, 'v> MathContext<'a, 'b, 'v> {
     pub fn layout_fragment(
         &mut self,
         elem: &dyn LayoutMath,
-    ) -> SourceResult<MathFragment> {
+    ) -> SourceResults<MathFragment> {
         let row = self.layout_fragments(elem)?;
         Ok(MathRow::new(row).into_fragment(self))
     }
@@ -104,28 +104,28 @@ impl<'a, 'b, 'v> MathContext<'a, 'b, 'v> {
     pub fn layout_fragments(
         &mut self,
         elem: &dyn LayoutMath,
-    ) -> SourceResult<Vec<MathFragment>> {
+    ) -> SourceResults<Vec<MathFragment>> {
         let prev = std::mem::take(&mut self.fragments);
         elem.layout_math(self)?;
         Ok(std::mem::replace(&mut self.fragments, prev))
     }
 
-    pub fn layout_row(&mut self, elem: &dyn LayoutMath) -> SourceResult<MathRow> {
+    pub fn layout_row(&mut self, elem: &dyn LayoutMath) -> SourceResults<MathRow> {
         let fragments = self.layout_fragments(elem)?;
         Ok(MathRow::new(fragments))
     }
 
-    pub fn layout_frame(&mut self, elem: &dyn LayoutMath) -> SourceResult<Frame> {
+    pub fn layout_frame(&mut self, elem: &dyn LayoutMath) -> SourceResults<Frame> {
         Ok(self.layout_fragment(elem)?.into_frame())
     }
 
-    pub fn layout_content(&mut self, content: &Content) -> SourceResult<Frame> {
+    pub fn layout_content(&mut self, content: &Content) -> SourceResults<Frame> {
         Ok(content
             .layout(self.vt, self.outer.chain(&self.local), self.regions)?
             .into_frame())
     }
 
-    pub fn layout_text(&mut self, elem: &TextElem) -> SourceResult<MathFragment> {
+    pub fn layout_text(&mut self, elem: &TextElem) -> SourceResults<MathFragment> {
         let text = elem.text();
         let span = elem.span();
         let mut chars = text.chars();
@@ -174,7 +174,7 @@ impl<'a, 'b, 'v> MathContext<'a, 'b, 'v> {
         self.outer.chain(&self.local)
     }
 
-    pub fn realize(&mut self, content: &Content) -> SourceResult<Option<Content>> {
+    pub fn realize(&mut self, content: &Content) -> SourceResults<Option<Content>> {
         realize(self.vt, content, self.outer.chain(&self.local))
     }
 

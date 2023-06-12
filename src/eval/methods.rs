@@ -3,7 +3,7 @@
 use ecow::EcoString;
 
 use super::{Args, IntoValue, Str, Value, Vm};
-use crate::diag::{At, SourceResult};
+use crate::diag::{At, SourceResults};
 use crate::eval::Datetime;
 use crate::model::{Location, Selector};
 use crate::syntax::Span;
@@ -15,7 +15,7 @@ pub fn call(
     method: &str,
     mut args: Args,
     span: Span,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let name = value.type_name();
     let missing = || Err(missing_method(name, method)).at(span);
 
@@ -216,7 +216,7 @@ pub fn call_mut(
     method: &str,
     mut args: Args,
     span: Span,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let name = value.type_name();
     let missing = || Err(missing_method(name, method)).at(span);
     let mut output = Value::None;
@@ -253,7 +253,7 @@ pub fn call_access<'a>(
     method: &str,
     mut args: Args,
     span: Span,
-) -> SourceResult<&'a mut Value> {
+) -> SourceResults<&'a mut Value> {
     let name = value.type_name();
     let missing = || Err(missing_method(name, method)).at(span);
 

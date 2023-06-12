@@ -107,7 +107,7 @@ impl Layout for BoxElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let width = match self.width(styles) {
             Sizing::Auto => Smart::Auto,
             Sizing::Rel(rel) => Smart::Custom(rel),
@@ -339,7 +339,7 @@ impl Layout for BlockElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         // Apply inset.
         let mut body = self.body(styles).unwrap_or_default();
         let inset = self.inset(styles);

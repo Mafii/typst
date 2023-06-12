@@ -56,7 +56,7 @@ use std::path::Path;
 
 use comemo::{Prehashed, Track, TrackedMut};
 
-use crate::diag::{FileResult, SourceResult};
+use crate::diag::{FileResult, SourceResults};
 use crate::doc::Document;
 use crate::eval::{Datetime, Library, Route, Tracer};
 use crate::font::{Font, FontBook};
@@ -65,7 +65,7 @@ use crate::util::Buffer;
 
 /// Compile a source file into a fully layouted document.
 #[tracing::instrument(skip(world))]
-pub fn compile(world: &dyn World) -> SourceResult<Document> {
+pub fn compile(world: &dyn World) -> SourceResults<Document> {
     let route = Route::default();
     let mut tracer = Tracer::default();
 

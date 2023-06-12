@@ -60,7 +60,7 @@ impl Layout for PlaceElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let out_of_flow = self.out_of_flow(styles);
 
         // The pod is the base area of the region because for absolute

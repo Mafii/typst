@@ -7,7 +7,7 @@ use ecow::EcoString;
 use std::sync::OnceLock;
 
 use super::{Args, Dynamic, Module, Value, Vm};
-use crate::diag::SourceResult;
+use crate::diag::SourceResults;
 use crate::doc::Document;
 use crate::geom::{Abs, Dir};
 use crate::model::{Content, ElemFunc, Introspector, Label, StyleChain, Styles, Vt};
@@ -33,7 +33,7 @@ pub struct Library {
 pub struct LangItems {
     /// The root layout function.
     pub layout:
-        fn(vt: &mut Vt, content: &Content, styles: StyleChain) -> SourceResult<Document>,
+        fn(vt: &mut Vt, content: &Content, styles: StyleChain) -> SourceResults<Document>,
     /// Access the em size.
     pub em: fn(StyleChain) -> Abs,
     /// Access the text direction.
@@ -112,7 +112,7 @@ pub struct LangItems {
         method: &str,
         args: Args,
         span: Span,
-    ) -> SourceResult<Value>,
+    ) -> SourceResults<Value>,
 }
 
 impl Debug for LangItems {

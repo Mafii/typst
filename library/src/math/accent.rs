@@ -53,7 +53,7 @@ pub struct AccentElem {
 
 impl LayoutMath for AccentElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         ctx.style(ctx.style.with_cramped(true));
         let base = ctx.layout_fragment(&self.base())?;
         ctx.unstyle();

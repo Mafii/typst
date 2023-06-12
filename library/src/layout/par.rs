@@ -118,7 +118,7 @@ pub struct ParElem {
 }
 
 impl Construct for ParElem {
-    fn construct(_: &mut Vm, args: &mut Args) -> SourceResult<Content> {
+    fn construct(_: &mut Vm, args: &mut Args) -> SourceResults<Content> {
         // The paragraph constructor is special: It doesn't create a paragraph
         // element. Instead, it just ensures that the passed content lives in a
         // separate paragraph and styles it.
@@ -142,7 +142,7 @@ impl ParElem {
         consecutive: bool,
         region: Size,
         expand: bool,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         #[comemo::memoize]
         #[allow(clippy::too_many_arguments)]
         fn cached(
@@ -155,7 +155,7 @@ impl ParElem {
             consecutive: bool,
             region: Size,
             expand: bool,
-        ) -> SourceResult<Fragment> {
+        ) -> SourceResults<Fragment> {
             let mut locator = Locator::chained(locator);
             let mut vt = Vt { world, tracer, locator: &mut locator, introspector };
             let children = par.children();
@@ -531,7 +531,7 @@ fn collect<'a>(
     children: &'a [Content],
     styles: &'a StyleChain<'a>,
     consecutive: bool,
-) -> SourceResult<(String, Vec<(Segment<'a>, StyleChain<'a>)>, SpanMapper)> {
+) -> SourceResults<(String, Vec<(Segment<'a>, StyleChain<'a>)>, SpanMapper)> {
     let mut full = String::new();
     let mut quoter = Quoter::new();
     let mut segments = vec![];
@@ -656,7 +656,7 @@ fn prepare<'a>(
     spans: SpanMapper,
     styles: StyleChain<'a>,
     region: Size,
-) -> SourceResult<Preparation<'a>> {
+) -> SourceResults<Preparation<'a>> {
     let bidi = BidiInfo::new(
         text,
         match TextElem::dir_in(styles) {
@@ -1315,7 +1315,7 @@ fn finalize(
     lines: &[Line],
     region: Size,
     expand: bool,
-) -> SourceResult<Fragment> {
+) -> SourceResults<Fragment> {
     // Determine the paragraph's width: Full width of the region if we
     // should expand or there's fractional spacing, fit-to-width otherwise.
     let width = if !region.x.is_finite()
@@ -1330,7 +1330,7 @@ fn finalize(
     let mut frames: Vec<Frame> = lines
         .iter()
         .map(|line| commit(vt, p, line, width, region.y))
-        .collect::<SourceResult<_>>()?;
+        .collect::<SourceResults<_>>()?;
 
     // Prevent orphans.
     let leading = ParElem::leading_in(p.styles);
@@ -1366,7 +1366,7 @@ fn commit(
     line: &Line,
     width: Abs,
     full: Abs,
-) -> SourceResult<Frame> {
+) -> SourceResults<Frame> {
     let mut remaining = width - line.width - p.hang;
     let mut offset = Abs::zero();
 

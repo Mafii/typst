@@ -192,7 +192,7 @@ pub struct EquationElem {
 }
 
 impl Synthesize for EquationElem {
-    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         // Resolve the supplement.
         let supplement = match self.supplement(styles) {
             Smart::Auto => TextElem::packed(self.local_name_in(styles)),
@@ -210,7 +210,7 @@ impl Synthesize for EquationElem {
 
 impl Show for EquationElem {
     #[tracing::instrument(name = "EquationElem::show", skip_all)]
-    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let mut realized = self.clone().pack().guarded(Guard::Base(Self::func()));
         if self.block(styles) {
             realized = realized.aligned(Axes::with_x(Some(Align::Center.into())))
@@ -236,7 +236,7 @@ impl Layout for EquationElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         const NUMBER_GUTTER: Em = Em::new(0.5);
 
         let block = self.block(styles);
@@ -360,7 +360,7 @@ impl Refable for EquationElem {
 }
 
 impl Outlinable for EquationElem {
-    fn outline(&self, vt: &mut Vt) -> SourceResult<Option<Content>> {
+    fn outline(&self, vt: &mut Vt) -> SourceResults<Option<Content>> {
         let Some(numbering) = self.numbering(StyleChain::default()) else {
             return Ok(None);
         };
@@ -385,19 +385,19 @@ impl Outlinable for EquationElem {
 }
 
 pub trait LayoutMath {
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()>;
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()>;
 }
 
 impl LayoutMath for EquationElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         self.body().layout_math(ctx)
     }
 }
 
 impl LayoutMath for Content {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         // Directly layout the body of nested equations instead of handling it
         // like a normal equation so that things like this work:
         // ```

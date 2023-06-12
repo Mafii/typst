@@ -28,7 +28,7 @@ use std::mem::ManuallyDrop;
 
 use comemo::{Track, Tracked, TrackedMut, Validate};
 
-use crate::diag::SourceResult;
+use crate::diag::SourceResults;
 use crate::doc::Document;
 use crate::eval::Tracer;
 use crate::World;
@@ -40,7 +40,7 @@ pub fn typeset(
     world: Tracked<dyn World + '_>,
     mut tracer: TrackedMut<Tracer>,
     content: &Content,
-) -> SourceResult<Document> {
+) -> SourceResults<Document> {
     tracing::info!("Starting typesetting");
 
     let library = world.library();

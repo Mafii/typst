@@ -43,7 +43,7 @@ impl Layout for MoveElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let pod = Regions::one(regions.base(), Axes::splat(false));
         let mut frame = self.body().layout(vt, styles, pod)?.into_frame();
         let delta = Axes::new(self.dx(styles), self.dy(styles)).resolve(styles);
@@ -113,7 +113,7 @@ impl Layout for RotateElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let pod = Regions::one(regions.base(), Axes::splat(false));
         let mut frame = self.body().layout(vt, styles, pod)?.into_frame();
         let Axes { x, y } =
@@ -182,7 +182,7 @@ impl Layout for ScaleElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let pod = Regions::one(regions.base(), Axes::splat(false));
         let mut frame = self.body().layout(vt, styles, pod)?.into_frame();
         let Axes { x, y } =

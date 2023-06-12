@@ -209,7 +209,7 @@ pub fn eval(
     source: Spanned<String>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let Spanned { v: text, span } = source;
     typst::eval::eval_string(vm.world(), &text, span)
 }

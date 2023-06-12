@@ -56,7 +56,7 @@ impl Layout for ColumnsElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let body = self.body();
 
         // Separating the infinite space into infinite columns does not make

@@ -64,7 +64,7 @@ impl Layout for ImageElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let first = families(styles).next();
         let fallback_family = first.as_ref().map(|f| f.as_str());
         let image =

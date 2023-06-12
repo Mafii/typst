@@ -7,7 +7,7 @@ use comemo::Prehashed;
 use ecow::{eco_vec, EcoString, EcoVec};
 
 use super::{Content, ElemFunc, Element, Selector, Vt};
-use crate::diag::{SourceResult, Trace, Tracepoint};
+use crate::diag::{SourceResults, Trace, Tracepoint};
 use crate::eval::{cast, Args, FromValue, Func, IntoValue, Value, Vm};
 use crate::syntax::Span;
 
@@ -213,7 +213,7 @@ impl Recipe {
     }
 
     /// Apply the recipe to the given content.
-    pub fn apply_vm(&self, vm: &mut Vm, content: Content) -> SourceResult<Content> {
+    pub fn apply_vm(&self, vm: &mut Vm, content: Content) -> SourceResults<Content> {
         match &self.transform {
             Transform::Content(content) => Ok(content.clone()),
             Transform::Func(func) => {
@@ -231,7 +231,7 @@ impl Recipe {
     }
 
     /// Apply the recipe to the given content.
-    pub fn apply_vt(&self, vt: &mut Vt, content: Content) -> SourceResult<Content> {
+    pub fn apply_vt(&self, vt: &mut Vt, content: Content) -> SourceResults<Content> {
         match &self.transform {
             Transform::Content(content) => Ok(content.clone()),
             Transform::Func(func) => {

@@ -289,7 +289,7 @@ pub struct MathStyleElem {
 
 impl LayoutMath for MathStyleElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         let mut style = ctx.style;
         if let Some(variant) = self.variant(StyleChain::default()) {
             style = style.with_variant(variant);

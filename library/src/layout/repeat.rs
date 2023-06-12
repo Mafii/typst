@@ -40,7 +40,7 @@ impl Layout for RepeatElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let pod = Regions::one(regions.size, Axes::new(false, false));
         let piece = self.body().layout(vt, styles, pod)?.into_frame();
         let align = AlignElem::alignment_in(styles).x.resolve(styles);

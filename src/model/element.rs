@@ -5,7 +5,7 @@ use std::hash::{Hash, Hasher};
 use once_cell::sync::Lazy;
 
 use super::{Content, Selector, Styles};
-use crate::diag::SourceResult;
+use crate::diag::SourceResults;
 use crate::eval::{cast, Args, Dict, Func, FuncInfo, Value, Vm};
 
 /// A document element.
@@ -26,13 +26,13 @@ pub trait Construct {
     ///
     /// This is passed only the arguments that remain after execution of the
     /// element's set rule.
-    fn construct(vm: &mut Vm, args: &mut Args) -> SourceResult<Content>;
+    fn construct(vm: &mut Vm, args: &mut Args) -> SourceResults<Content>;
 }
 
 /// An element's set rule.
 pub trait Set {
     /// Parse relevant arguments into style properties for this element.
-    fn set(args: &mut Args) -> SourceResult<Styles>;
+    fn set(args: &mut Args) -> SourceResults<Styles>;
 }
 
 /// An element's function.
@@ -56,7 +56,7 @@ impl ElemFunc {
     }
 
     /// Construct an element.
-    pub fn construct(self, vm: &mut Vm, args: &mut Args) -> SourceResult<Content> {
+    pub fn construct(self, vm: &mut Vm, args: &mut Args) -> SourceResults<Content> {
         (self.0.construct)(vm, args)
     }
 
@@ -80,7 +80,7 @@ impl ElemFunc {
     }
 
     /// Execute the set rule for the element and return the resulting style map.
-    pub fn set(self, mut args: Args) -> SourceResult<Styles> {
+    pub fn set(self, mut args: Args) -> SourceResults<Styles> {
         let styles = (self.0.set)(&mut args)?;
         args.finish()?;
         Ok(styles)
@@ -126,9 +126,9 @@ pub struct NativeElemFunc {
     /// The element's vtable for capability dispatch.
     pub vtable: fn(of: TypeId) -> Option<*const ()>,
     /// The element's constructor.
-    pub construct: fn(&mut Vm, &mut Args) -> SourceResult<Content>,
+    pub construct: fn(&mut Vm, &mut Args) -> SourceResults<Content>,
     /// The element's set rule.
-    pub set: fn(&mut Args) -> SourceResult<Styles>,
+    pub set: fn(&mut Args) -> SourceResults<Styles>,
     /// Details about the function.
     pub info: Lazy<FuncInfo>,
 }

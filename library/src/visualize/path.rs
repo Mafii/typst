@@ -72,7 +72,7 @@ impl Layout for PathElem {
         _: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let resolve = |axes: Axes<Rel<Length>>| {
             axes.resolve(styles)
                 .zip(regions.base())

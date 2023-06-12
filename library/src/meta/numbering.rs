@@ -66,7 +66,7 @@ pub fn numbering(
     numbers: Vec<usize>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     numbering.apply_vm(vm, &numbers)
 }
 
@@ -81,7 +81,7 @@ pub enum Numbering {
 
 impl Numbering {
     /// Apply the pattern to the given numbers.
-    pub fn apply_vm(&self, vm: &mut Vm, numbers: &[usize]) -> SourceResult<Value> {
+    pub fn apply_vm(&self, vm: &mut Vm, numbers: &[usize]) -> SourceResults<Value> {
         Ok(match self {
             Self::Pattern(pattern) => Value::Str(pattern.apply(numbers).into()),
             Self::Func(func) => {
@@ -92,7 +92,7 @@ impl Numbering {
     }
 
     /// Apply the pattern to the given numbers.
-    pub fn apply_vt(&self, vt: &mut Vt, numbers: &[usize]) -> SourceResult<Value> {
+    pub fn apply_vt(&self, vt: &mut Vt, numbers: &[usize]) -> SourceResults<Value> {
         Ok(match self {
             Self::Pattern(pattern) => Value::Str(pattern.apply(numbers).into()),
             Self::Func(func) => func.call_vt(vt, numbers.iter().copied())?,

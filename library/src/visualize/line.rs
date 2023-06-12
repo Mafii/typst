@@ -91,7 +91,7 @@ impl Layout for LineElem {
         _: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let resolve = |axes: Axes<Rel<Abs>>| {
             axes.zip(regions.base()).map(|(l, b)| l.relative_to(b))
         };

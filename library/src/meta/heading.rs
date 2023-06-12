@@ -99,7 +99,7 @@ pub struct HeadingElem {
 }
 
 impl Synthesize for HeadingElem {
-    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         // Resolve the supplement.
         let supplement = match self.supplement(styles) {
             Smart::Auto => TextElem::packed(self.local_name_in(styles)),
@@ -118,7 +118,7 @@ impl Synthesize for HeadingElem {
 
 impl Show for HeadingElem {
     #[tracing::instrument(name = "HeadingElem::show", skip_all)]
-    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let mut realized = self.body();
         if let Some(numbering) = self.numbering(styles) {
             realized = Counter::of(Self::func())
@@ -186,7 +186,7 @@ impl Refable for HeadingElem {
 }
 
 impl Outlinable for HeadingElem {
-    fn outline(&self, vt: &mut Vt) -> SourceResult<Option<Content>> {
+    fn outline(&self, vt: &mut Vt) -> SourceResults<Option<Content>> {
         if !self.outlined(StyleChain::default()) {
             return Ok(None);
         }

@@ -66,7 +66,7 @@ impl Layout for PadElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let sides = Sides::new(
             self.left(styles),
             self.top(styles),

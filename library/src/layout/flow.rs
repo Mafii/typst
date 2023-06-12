@@ -31,7 +31,7 @@ impl Layout for FlowElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let mut layouter = FlowLayouter::new(regions, styles);
 
         for mut child in &self.children() {
@@ -176,7 +176,7 @@ impl<'a> FlowLayouter<'a> {
         vt: &mut Vt,
         v: &VElem,
         styles: StyleChain,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         self.layout_item(
             vt,
             match v.amount() {
@@ -196,7 +196,7 @@ impl<'a> FlowLayouter<'a> {
         vt: &mut Vt,
         par: &ParElem,
         styles: StyleChain,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         let aligns = AlignElem::alignment_in(styles).resolve(styles);
         let leading = ParElem::leading_in(styles);
         let consecutive = self.last_was_par;
@@ -245,7 +245,7 @@ impl<'a> FlowLayouter<'a> {
         vt: &mut Vt,
         content: &dyn Layout,
         styles: StyleChain,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         let aligns = AlignElem::alignment_in(styles).resolve(styles);
         let sticky = BlockElem::sticky_in(styles);
         let pod = Regions::one(self.regions.base(), Axes::splat(false));
@@ -261,7 +261,7 @@ impl<'a> FlowLayouter<'a> {
         vt: &mut Vt,
         block: &Content,
         styles: StyleChain,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         // Placed elements that are out of flow produce placed items which
         // aren't aligned later.
         if let Some(placed) = block.to::<PlaceElem>() {
@@ -327,7 +327,7 @@ impl<'a> FlowLayouter<'a> {
 
     /// Layout a finished frame.
     #[tracing::instrument(name = "FlowLayouter::layout_item", skip_all)]
-    fn layout_item(&mut self, vt: &mut Vt, item: FlowItem) -> SourceResult<()> {
+    fn layout_item(&mut self, vt: &mut Vt, item: FlowItem) -> SourceResults<()> {
         match item {
             FlowItem::Absolute(v, weak) => {
                 if weak
@@ -371,7 +371,7 @@ impl<'a> FlowLayouter<'a> {
     }
 
     /// Finish the frame for one region.
-    fn finish_region(&mut self) -> SourceResult<()> {
+    fn finish_region(&mut self) -> SourceResults<()> {
         // Trim weak spacing.
         while self
             .items
@@ -460,7 +460,7 @@ impl<'a> FlowLayouter<'a> {
     }
 
     /// Finish layouting and return the resulting fragment.
-    fn finish(mut self) -> SourceResult<Fragment> {
+    fn finish(mut self) -> SourceResults<Fragment> {
         if self.expand.y {
             while !self.regions.backlog.is_empty() {
                 self.finish_region()?;
@@ -481,7 +481,7 @@ impl FlowLayouter<'_> {
         notes: &mut Vec<FootnoteElem>,
         movable: bool,
         force: bool,
-    ) -> SourceResult<bool> {
+    ) -> SourceResults<bool> {
         let items_len = self.items.len();
         let notes_len = notes.len();
 
@@ -543,7 +543,7 @@ impl FlowLayouter<'_> {
 
     /// Layout and save the footnote separator, typically a line.
     #[tracing::instrument(skip_all)]
-    fn layout_footnote_separator(&mut self, vt: &mut Vt) -> SourceResult<()> {
+    fn layout_footnote_separator(&mut self, vt: &mut Vt) -> SourceResults<()> {
         let expand = Axes::new(self.regions.expand.x, false);
         let pod = Regions::one(self.regions.base(), expand);
         let separator = &self.footnote_config.separator;

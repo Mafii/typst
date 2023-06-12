@@ -148,7 +148,7 @@ pub fn rgb(
     alpha: Component,
     /// The arguments.
     args: Args,
-) -> SourceResult<Color> {
+) -> SourceResults<Color> {
     let mut args = args;
     Ok(if let Some(string) = args.find::<Spanned<EcoString>>()? {
         match RgbaColor::from_str(&string.v) {
@@ -413,7 +413,7 @@ pub fn symbol(
     variants: Vec<Spanned<Variant>>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<Symbol> {
+) -> SourceResults<Symbol> {
     let mut list = Vec::new();
     if variants.is_empty() {
         bail!(span, "expected at least one variant");
@@ -477,7 +477,7 @@ pub fn str(
     #[named]
     #[default(Spanned::new(10, Span::detached()))]
     base: Spanned<i64>,
-) -> SourceResult<Str> {
+) -> SourceResults<Str> {
     Ok(match value {
         ToStr::Str(s) => {
             if base.v != 10 {
@@ -660,7 +660,7 @@ pub fn regex(
     /// and extract its text to use it for your regular expressions:
     /// ```{regex(`\d+\.\d+\.\d+`.text)}```.
     regex: Spanned<EcoString>,
-) -> SourceResult<Regex> {
+) -> SourceResults<Regex> {
     Regex::new(&regex.v).at(regex.span)
 }
 
@@ -696,7 +696,7 @@ pub fn range(
     step: NonZeroI64,
     /// The arguments.
     args: Args,
-) -> SourceResult<Array> {
+) -> SourceResults<Array> {
     let mut args = args;
     let first = args.expect::<i64>("end")?;
     let (start, end) = match args.eat::<i64>()? {

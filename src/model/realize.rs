@@ -1,5 +1,5 @@
 use super::{Content, ElemFunc, Element, MetaElem, Recipe, Selector, StyleChain, Vt};
-use crate::diag::SourceResult;
+use crate::diag::SourceResults;
 use crate::doc::Meta;
 use crate::util::hash128;
 
@@ -32,7 +32,7 @@ pub fn realize(
     vt: &mut Vt,
     target: &Content,
     styles: StyleChain,
-) -> SourceResult<Option<Content>> {
+) -> SourceResults<Option<Content>> {
     // Pre-process.
     if target.needs_preparation() {
         let mut elem = target.clone();
@@ -101,7 +101,7 @@ fn try_apply(
     target: &Content,
     recipe: &Recipe,
     guard: Guard,
-) -> SourceResult<Option<Content>> {
+) -> SourceResults<Option<Content>> {
     match &recipe.selector {
         Some(Selector::Elem(element, _)) => {
             if target.func() != *element {
@@ -172,13 +172,13 @@ pub trait Locatable {}
 /// rule.
 pub trait Synthesize {
     /// Prepare the element for show rule application.
-    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResult<()>;
+    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResults<()>;
 }
 
 /// The base recipe for an element.
 pub trait Show {
     /// Execute the base recipe for this element.
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content>;
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content>;
 }
 
 /// Post-process an element after it was realized.

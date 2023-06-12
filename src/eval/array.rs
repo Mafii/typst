@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign};
 use ecow::{eco_format, EcoString, EcoVec};
 
 use super::{ops, Args, CastInfo, FromValue, Func, IntoValue, Reflect, Value, Vm};
-use crate::diag::{At, SourceResult, StrResult};
+use crate::diag::{At, SourceResults, StrResult};
 use crate::syntax::Span;
 use crate::util::pretty_array_like;
 
@@ -150,7 +150,7 @@ impl Array {
     }
 
     /// Return the first matching item.
-    pub fn find(&self, vm: &mut Vm, func: Func) -> SourceResult<Option<Value>> {
+    pub fn find(&self, vm: &mut Vm, func: Func) -> SourceResults<Option<Value>> {
         for item in self.iter() {
             let args = Args::new(func.span(), [item.clone()]);
             if func.call_vm(vm, args)?.cast::<bool>().at(func.span())? {
@@ -161,7 +161,7 @@ impl Array {
     }
 
     /// Return the index of the first matching item.
-    pub fn position(&self, vm: &mut Vm, func: Func) -> SourceResult<Option<i64>> {
+    pub fn position(&self, vm: &mut Vm, func: Func) -> SourceResults<Option<i64>> {
         for (i, item) in self.iter().enumerate() {
             let args = Args::new(func.span(), [item.clone()]);
             if func.call_vm(vm, args)?.cast::<bool>().at(func.span())? {
@@ -174,7 +174,7 @@ impl Array {
 
     /// Return a new array with only those items for which the function returns
     /// true.
-    pub fn filter(&self, vm: &mut Vm, func: Func) -> SourceResult<Self> {
+    pub fn filter(&self, vm: &mut Vm, func: Func) -> SourceResults<Self> {
         let mut kept = EcoVec::new();
         for item in self.iter() {
             let args = Args::new(func.span(), [item.clone()]);
@@ -186,7 +186,7 @@ impl Array {
     }
 
     /// Transform each item in the array with a function.
-    pub fn map(&self, vm: &mut Vm, func: Func) -> SourceResult<Self> {
+    pub fn map(&self, vm: &mut Vm, func: Func) -> SourceResults<Self> {
         self.iter()
             .map(|item| {
                 let args = Args::new(func.span(), [item.clone()]);
@@ -196,7 +196,7 @@ impl Array {
     }
 
     /// Fold all of the array's items into one with a function.
-    pub fn fold(&self, vm: &mut Vm, init: Value, func: Func) -> SourceResult<Value> {
+    pub fn fold(&self, vm: &mut Vm, init: Value, func: Func) -> SourceResults<Value> {
         let mut acc = init;
         for item in self.iter() {
             let args = Args::new(func.span(), [acc, item.clone()]);
@@ -206,7 +206,7 @@ impl Array {
     }
 
     /// Calculates the sum of the array's items
-    pub fn sum(&self, default: Option<Value>, span: Span) -> SourceResult<Value> {
+    pub fn sum(&self, default: Option<Value>, span: Span) -> SourceResults<Value> {
         let mut acc = self
             .first()
             .map(|x| x.clone())
@@ -223,7 +223,7 @@ impl Array {
     }
 
     /// Calculates the product of the array's items
-    pub fn product(&self, default: Option<Value>, span: Span) -> SourceResult<Value> {
+    pub fn product(&self, default: Option<Value>, span: Span) -> SourceResults<Value> {
         let mut acc = self
             .first()
             .map(|x| x.clone())
@@ -240,7 +240,7 @@ impl Array {
     }
 
     /// Whether any item matches.
-    pub fn any(&self, vm: &mut Vm, func: Func) -> SourceResult<bool> {
+    pub fn any(&self, vm: &mut Vm, func: Func) -> SourceResults<bool> {
         for item in self.iter() {
             let args = Args::new(func.span(), [item.clone()]);
             if func.call_vm(vm, args)?.cast::<bool>().at(func.span())? {
@@ -252,7 +252,7 @@ impl Array {
     }
 
     /// Whether all items match.
-    pub fn all(&self, vm: &mut Vm, func: Func) -> SourceResult<bool> {
+    pub fn all(&self, vm: &mut Vm, func: Func) -> SourceResults<bool> {
         for item in self.iter() {
             let args = Args::new(func.span(), [item.clone()]);
             if !func.call_vm(vm, args)?.cast::<bool>().at(func.span())? {
@@ -330,7 +330,7 @@ impl Array {
         vm: &mut Vm,
         span: Span,
         key: Option<Func>,
-    ) -> SourceResult<Self> {
+    ) -> SourceResults<Self> {
         let mut result = Ok(());
         let mut vec = self.0.clone();
         let mut key_of = |x: Value| match &key {

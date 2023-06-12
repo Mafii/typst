@@ -10,7 +10,7 @@ use super::{
     cast, Args, CastInfo, Eval, FlowEvent, IntoValue, Route, Scope, Scopes, Tracer,
     Value, Vm,
 };
-use crate::diag::{bail, SourceResult, StrResult};
+use crate::diag::{bail, SourceResults, StrResult};
 use crate::model::{ElemFunc, Introspector, Locator, Vt};
 use crate::syntax::ast::{self, AstNode, Expr, Ident};
 use crate::syntax::{SourceId, Span, SyntaxNode};
@@ -74,7 +74,7 @@ impl Func {
     }
 
     /// Call the function with the given arguments.
-    pub fn call_vm(&self, vm: &mut Vm, mut args: Args) -> SourceResult<Value> {
+    pub fn call_vm(&self, vm: &mut Vm, mut args: Args) -> SourceResults<Value> {
         let _span = tracing::info_span!(
             "call",
             name = self.name().unwrap_or("<anon>"),
@@ -122,7 +122,7 @@ impl Func {
         &self,
         vt: &mut Vt,
         args: impl IntoIterator<Item = T>,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let route = Route::default();
         let id = SourceId::detached();
         let scopes = Scopes::new(None);
@@ -207,7 +207,7 @@ impl From<ElemFunc> for Func {
 /// A Typst function defined by a native Rust function.
 pub struct NativeFunc {
     /// The function's implementation.
-    pub func: fn(&mut Vm, &mut Args) -> SourceResult<Value>,
+    pub func: fn(&mut Vm, &mut Args) -> SourceResults<Value>,
     /// Details about the function.
     pub info: Lazy<FuncInfo>,
 }
@@ -331,7 +331,7 @@ impl Closure {
         introspector: Tracked<Introspector>,
         depth: usize,
         mut args: Args,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let closure = match &this.repr {
             Repr::Closure(closure) => closure,
             _ => panic!("`this` must be a closure"),

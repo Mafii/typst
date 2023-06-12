@@ -7,7 +7,7 @@ use ecow::EcoString;
 use unicode_segmentation::UnicodeSegmentation;
 
 use super::{cast, dict, Args, Array, Dict, Func, IntoValue, Value, Vm};
-use crate::diag::{At, SourceResult, StrResult};
+use crate::diag::{At, SourceResults, StrResult};
 use crate::geom::GenAlign;
 
 /// Create a new [`Str`] from a format string.
@@ -266,14 +266,14 @@ impl Str {
         pattern: StrPattern,
         with: Replacement,
         count: Option<usize>,
-    ) -> SourceResult<Self> {
+    ) -> SourceResults<Self> {
         // Heuristic: Assume the new string is about the same length as
         // the current string.
         let mut output = EcoString::with_capacity(self.as_str().len());
 
         // Replace one match of a pattern with the replacement.
         let mut last_match = 0;
-        let mut handle_match = |range: Range<usize>, dict: Dict| -> SourceResult<()> {
+        let mut handle_match = |range: Range<usize>, dict: Dict| -> SourceResults<()> {
             // Push everything until the match.
             output.push_str(&self[last_match..range.start]);
             last_match = range.end;

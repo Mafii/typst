@@ -55,7 +55,7 @@ pub struct AttachElem {
 
 impl LayoutMath for AttachElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         type GetAttachment = fn(&AttachElem, styles: StyleChain) -> Option<Content>;
         let layout_attachment = |ctx: &mut MathContext, getter: GetAttachment| {
             getter(self, ctx.styles())
@@ -111,7 +111,7 @@ pub struct ScriptsElem {
 
 impl LayoutMath for ScriptsElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         self.body().layout_math(ctx)
     }
 }
@@ -134,7 +134,7 @@ pub struct LimitsElem {
 
 impl LayoutMath for LimitsElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         self.body().layout_math(ctx)
     }
 }
@@ -150,7 +150,7 @@ fn layout_attachments(
     ctx: &mut MathContext,
     base: MathFragment,
     [tl, t, tr, bl, b, br]: [Option<MathFragment>; 6],
-) -> SourceResult<()> {
+) -> SourceResults<()> {
     let (shift_up, shift_down) =
         compute_shifts_up_and_down(ctx, &base, [&tl, &tr, &bl, &br]);
 

@@ -162,7 +162,7 @@ pub struct FigureElem {
 }
 
 impl Synthesize for FigureElem {
-    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         let numbering = self.numbering(styles);
 
         // Determine the figure's kind.
@@ -234,7 +234,7 @@ impl Synthesize for FigureElem {
 
 impl Show for FigureElem {
     #[tracing::instrument(name = "FigureElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let mut realized = self.body();
 
         // Build the caption, if any.
@@ -287,7 +287,7 @@ impl Refable for FigureElem {
 }
 
 impl Outlinable for FigureElem {
-    fn outline(&self, vt: &mut Vt) -> SourceResult<Option<Content>> {
+    fn outline(&self, vt: &mut Vt) -> SourceResults<Option<Content>> {
         if !self.outlined(StyleChain::default()) {
             return Ok(None);
         }
@@ -298,7 +298,7 @@ impl Outlinable for FigureElem {
 
 impl FigureElem {
     /// Builds the full caption for the figure (with supplement and numbering).
-    pub fn full_caption(&self, vt: &mut Vt) -> SourceResult<Option<Content>> {
+    pub fn full_caption(&self, vt: &mut Vt) -> SourceResults<Option<Content>> {
         let Some(mut caption) = self.caption(StyleChain::default()) else {
             return Ok(None);
         };

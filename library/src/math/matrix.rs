@@ -34,7 +34,7 @@ pub struct VecElem {
 
 impl LayoutMath for VecElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         let delim = self.delim(ctx.styles());
         let frame = layout_vec_body(ctx, &self.children(), Align::Center)?;
         layout_delimiters(
@@ -117,7 +117,7 @@ pub struct MatElem {
 
 impl LayoutMath for MatElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         let delim = self.delim(ctx.styles());
         let frame = layout_mat_body(ctx, &self.rows())?;
         layout_delimiters(
@@ -164,7 +164,7 @@ pub struct CasesElem {
 
 impl LayoutMath for CasesElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         let delim = self.delim(ctx.styles());
         let frame = layout_vec_body(ctx, &self.children(), Align::Left)?;
         layout_delimiters(ctx, frame, Some(delim.open()), None, self.span())
@@ -220,7 +220,7 @@ fn layout_vec_body(
     ctx: &mut MathContext,
     column: &[Content],
     align: Align,
-) -> SourceResult<Frame> {
+) -> SourceResults<Frame> {
     let gap = ROW_GAP.scaled(ctx);
     ctx.style(ctx.style.for_denominator());
     let mut flat = vec![];
@@ -232,7 +232,7 @@ fn layout_vec_body(
 }
 
 /// Layout the inner contents of a matrix.
-fn layout_mat_body(ctx: &mut MathContext, rows: &[Vec<Content>]) -> SourceResult<Frame> {
+fn layout_mat_body(ctx: &mut MathContext, rows: &[Vec<Content>]) -> SourceResults<Frame> {
     let row_gap = ROW_GAP.scaled(ctx);
     let col_gap = COL_GAP.scaled(ctx);
 
@@ -287,7 +287,7 @@ fn layout_delimiters(
     left: Option<char>,
     right: Option<char>,
     span: Span,
-) -> SourceResult<()> {
+) -> SourceResults<()> {
     let axis = scaled!(ctx, axis_height);
     let short_fall = DELIM_SHORT_FALL.scaled(ctx);
     let height = frame.height();

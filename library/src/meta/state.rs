@@ -262,7 +262,7 @@ impl State {
         method: &str,
         mut args: Args,
         span: Span,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let value = match method {
             "display" => self.display(args.eat()?).into_value(),
             "at" => self.at(&mut vm.vt, args.expect("location")?)?,
@@ -281,7 +281,7 @@ impl State {
 
     /// Get the value of the state at the given location.
     #[tracing::instrument(skip(self, vt))]
-    pub fn at(self, vt: &mut Vt, location: Location) -> SourceResult<Value> {
+    pub fn at(self, vt: &mut Vt, location: Location) -> SourceResults<Value> {
         let sequence = self.sequence(vt)?;
         let offset = vt.introspector.query(&self.selector().before(location, true)).len();
         Ok(sequence[offset].clone())
@@ -289,7 +289,7 @@ impl State {
 
     /// Get the value of the state at the final location.
     #[tracing::instrument(skip(self, vt))]
-    pub fn final_(self, vt: &mut Vt, _: Location) -> SourceResult<Value> {
+    pub fn final_(self, vt: &mut Vt, _: Location) -> SourceResults<Value> {
         let sequence = self.sequence(vt)?;
         Ok(sequence.last().unwrap().clone())
     }
@@ -303,7 +303,7 @@ impl State {
     ///
     /// This has to happen just once for all states, cutting down the number
     /// of state updates from quadratic to linear.
-    fn sequence(&self, vt: &mut Vt) -> SourceResult<EcoVec<Value>> {
+    fn sequence(&self, vt: &mut Vt) -> SourceResults<EcoVec<Value>> {
         self.sequence_impl(
             vt.world,
             TrackedMut::reborrow_mut(&mut vt.tracer),
@@ -320,7 +320,7 @@ impl State {
         tracer: TrackedMut<Tracer>,
         locator: Tracked<Locator>,
         introspector: Tracked<Introspector>,
-    ) -> SourceResult<EcoVec<Value>> {
+    ) -> SourceResults<EcoVec<Value>> {
         let mut locator = Locator::chained(locator);
         let mut vt = Vt { world, tracer, locator: &mut locator, introspector };
         let mut state = self.init.clone();
@@ -396,7 +396,7 @@ struct DisplayElem {
 
 impl Show for DisplayElem {
     #[tracing::instrument(name = "DisplayElem::show", skip(self, vt))]
-    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         if !vt.introspector.init() {
             return Ok(Content::empty());
         }
@@ -427,7 +427,7 @@ struct UpdateElem {
 
 impl Show for UpdateElem {
     #[tracing::instrument(name = "UpdateElem::show")]
-    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         Ok(Content::empty())
     }
 }

@@ -89,7 +89,7 @@ impl LinkElem {
 
 impl Show for LinkElem {
     #[tracing::instrument(name = "LinkElem::show", skip(self, vt))]
-    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         let body = self.body();
         let dest = match self.dest() {
             LinkTarget::Dest(dest) => dest,

@@ -6,7 +6,7 @@ use std::ops::Add;
 use ecow::EcoString;
 
 use super::Value;
-use crate::diag::{At, SourceResult, StrResult};
+use crate::diag::{At, SourceResults, StrResult};
 use crate::syntax::{Span, Spanned};
 use crate::util::separated_list;
 
@@ -78,7 +78,7 @@ impl<T: Reflect> Reflect for StrResult<T> {
     }
 }
 
-impl<T: Reflect> Reflect for SourceResult<T> {
+impl<T: Reflect> Reflect for SourceResults<T> {
     fn describe() -> CastInfo {
         T::describe()
     }
@@ -128,29 +128,29 @@ impl<T: IntoValue> IntoValue for Spanned<T> {
     }
 }
 
-/// Cast a Rust type or result into a [`SourceResult<Value>`].
+/// Cast a Rust type or result into a [`SourceResults<Value>`].
 ///
-/// Converts `T`, [`StrResult<T>`], or [`SourceResult<T>`] into
-/// [`SourceResult<Value>`] by `Ok`-wrapping or adding span information.
+/// Converts `T`, [`StrResult<T>`], or [`SourceResults<T>`] into
+/// [`SourceResults<Value>`] by `Ok`-wrapping or adding span information.
 pub trait IntoResult {
     /// Cast this type into a value.
-    fn into_result(self, span: Span) -> SourceResult<Value>;
+    fn into_result(self, span: Span) -> SourceResults<Value>;
 }
 
 impl<T: IntoValue> IntoResult for T {
-    fn into_result(self, _: Span) -> SourceResult<Value> {
+    fn into_result(self, _: Span) -> SourceResults<Value> {
         Ok(self.into_value())
     }
 }
 
 impl<T: IntoValue> IntoResult for StrResult<T> {
-    fn into_result(self, span: Span) -> SourceResult<Value> {
+    fn into_result(self, span: Span) -> SourceResults<Value> {
         self.map(IntoValue::into_value).at(span)
     }
 }
 
-impl<T: IntoValue> IntoResult for SourceResult<T> {
-    fn into_result(self, _: Span) -> SourceResult<Value> {
+impl<T: IntoValue> IntoResult for SourceResults<T> {
+    fn into_result(self, _: Span) -> SourceResults<Value> {
         self.map(IntoValue::into_value)
     }
 }

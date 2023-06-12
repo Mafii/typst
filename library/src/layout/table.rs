@@ -133,7 +133,7 @@ impl Layout for TableElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let inset = self.inset(styles);
         let align = self.align(styles);
 
@@ -155,7 +155,7 @@ impl Layout for TableElem {
 
                 Ok(child)
             })
-            .collect::<SourceResult<_>>()?;
+            .collect::<SourceResults<_>>()?;
 
         let fill = self.fill(styles);
         let stroke = self.stroke(styles).map(PartialStroke::unwrap_or_default);
@@ -247,7 +247,7 @@ pub enum Celled<T> {
 
 impl<T: Default + Clone + FromValue> Celled<T> {
     /// Resolve the value based on the cell position.
-    pub fn resolve(&self, vt: &mut Vt, x: usize, y: usize) -> SourceResult<T> {
+    pub fn resolve(&self, vt: &mut Vt, x: usize, y: usize) -> SourceResults<T> {
         Ok(match self {
             Self::Value(value) => value.clone(),
             Self::Func(func) => func.call_vt(vt, [x, y])?.cast().at(func.span())?,

@@ -31,7 +31,7 @@ pub struct FracElem {
 
 impl LayoutMath for FracElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         layout(ctx, &self.num(), &self.denom(), false, self.span())
     }
 }
@@ -57,7 +57,7 @@ pub struct BinomElem {
 }
 
 impl LayoutMath for BinomElem {
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         layout(ctx, &self.upper(), &self.lower(), true, self.span())
     }
 }
@@ -69,7 +69,7 @@ fn layout(
     denom: &Content,
     binom: bool,
     span: Span,
-) -> SourceResult<()> {
+) -> SourceResults<()> {
     let short_fall = DELIM_SHORT_FALL.scaled(ctx);
     let axis = scaled!(ctx, axis_height);
     let thickness = scaled!(ctx, fraction_rule_thickness);

@@ -203,7 +203,7 @@ impl Layout for EnumElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let numbering = self.numbering(styles);
         let indent = self.indent(styles);
         let body_indent = self.body_indent(styles);

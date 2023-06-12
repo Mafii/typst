@@ -10,7 +10,7 @@ use super::{
     element, Behave, Behaviour, ElemFunc, Element, Fold, Guard, Label, Locatable,
     Location, Recipe, Selector, Style, Styles, Synthesize,
 };
-use crate::diag::{SourceResult, StrResult};
+use crate::diag::{SourceResults, StrResult};
 use crate::doc::Meta;
 use crate::eval::{Dict, FromValue, IntoValue, Str, Value, Vm};
 use crate::syntax::Span;
@@ -304,7 +304,7 @@ impl Content {
     }
 
     /// Style this content with a recipe, eagerly applying it if possible.
-    pub fn styled_with_recipe(self, vm: &mut Vm, recipe: Recipe) -> SourceResult<Self> {
+    pub fn styled_with_recipe(self, vm: &mut Vm, recipe: Recipe) -> SourceResults<Self> {
         if recipe.selector.is_none() {
             recipe.apply_vm(vm, self)
         } else {

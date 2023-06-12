@@ -136,7 +136,7 @@ impl BibliographyElem {
 }
 
 impl Synthesize for BibliographyElem {
-    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         self.push_style(self.style(styles));
         Ok(())
     }
@@ -144,7 +144,7 @@ impl Synthesize for BibliographyElem {
 
 impl Show for BibliographyElem {
     #[tracing::instrument(name = "BibliographyElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         const COLUMN_GUTTER: Em = Em::new(0.65);
         const INDENT: Em = Em::new(1.5);
 
@@ -346,7 +346,7 @@ pub struct CiteElem {
 }
 
 impl Synthesize for CiteElem {
-    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResult<()> {
+    fn synthesize(&mut self, _vt: &mut Vt, styles: StyleChain) -> SourceResults<()> {
         self.push_supplement(self.supplement(styles));
         self.push_brackets(self.brackets(styles));
         self.push_style(self.style(styles));
@@ -356,7 +356,7 @@ impl Synthesize for CiteElem {
 
 impl Show for CiteElem {
     #[tracing::instrument(name = "CiteElem::show", skip(self, vt))]
-    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         if !vt.introspector.init() {
             return Ok(Content::empty());
         }

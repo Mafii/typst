@@ -48,7 +48,7 @@ pub use self::transform::*;
 use std::mem;
 
 use typed_arena::Arena;
-use typst::diag::SourceResult;
+use typst::diag::SourceResults;
 use typst::eval::Tracer;
 use typst::model::{applicable, realize, StyleVecBuilder};
 
@@ -106,12 +106,12 @@ pub(super) fn define(global: &mut Scope) {
 /// Root-level layout.
 pub trait LayoutRoot {
     /// Layout into one frame per page.
-    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Document>;
+    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Document>;
 }
 
 impl LayoutRoot for Content {
     #[tracing::instrument(name = "Content::layout_root", skip_all)]
-    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Document> {
+    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Document> {
         #[comemo::memoize]
         fn cached(
             content: &Content,
@@ -120,7 +120,7 @@ impl LayoutRoot for Content {
             locator: Tracked<Locator>,
             introspector: Tracked<Introspector>,
             styles: StyleChain,
-        ) -> SourceResult<Document> {
+        ) -> SourceResults<Document> {
             let mut locator = Locator::chained(locator);
             let mut vt = Vt { world, tracer, locator: &mut locator, introspector };
             let scratch = Scratch::default();
@@ -152,7 +152,7 @@ pub trait Layout {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment>;
+    ) -> SourceResults<Fragment>;
 
     /// Layout without side effects.
     ///
@@ -164,7 +164,7 @@ pub trait Layout {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let mut locator = Locator::chained(vt.locator.track());
         let mut vt = Vt {
             world: vt.world,
@@ -183,7 +183,7 @@ impl Layout for Content {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         #[comemo::memoize]
         fn cached(
             content: &Content,
@@ -193,7 +193,7 @@ impl Layout for Content {
             introspector: Tracked<Introspector>,
             styles: StyleChain,
             regions: Regions,
-        ) -> SourceResult<Fragment> {
+        ) -> SourceResults<Fragment> {
             let mut locator = Locator::chained(locator);
             let mut vt = Vt { world, tracer, locator: &mut locator, introspector };
             let scratch = Scratch::default();
@@ -228,7 +228,7 @@ fn realize_root<'a>(
     scratch: &'a Scratch<'a>,
     content: &'a Content,
     styles: StyleChain<'a>,
-) -> SourceResult<(Content, StyleChain<'a>)> {
+) -> SourceResults<(Content, StyleChain<'a>)> {
     if content.can::<dyn LayoutRoot>() && !applicable(content, styles) {
         return Ok((content.clone(), styles));
     }
@@ -247,7 +247,7 @@ fn realize_block<'a>(
     scratch: &'a Scratch<'a>,
     content: &'a Content,
     styles: StyleChain<'a>,
-) -> SourceResult<(Content, StyleChain<'a>)> {
+) -> SourceResults<(Content, StyleChain<'a>)> {
     if content.can::<dyn Layout>()
         && !content.is::<LineElem>()
         && !content.is::<RectElem>()
@@ -310,7 +310,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         &mut self,
         mut content: &'a Content,
         styles: StyleChain<'a>,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         if content.can::<dyn LayoutMath>() && !content.is::<EquationElem>() {
             content =
                 self.scratch.content.alloc(EquationElem::new(content.clone()).pack());
@@ -376,7 +376,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         elem: &'a Content,
         map: &'a Styles,
         styles: StyleChain<'a>,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         let stored = self.scratch.styles.alloc(styles);
         let styles = stored.chain(map);
         self.interrupt_style(map, None)?;
@@ -389,7 +389,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         &mut self,
         local: &Styles,
         outer: Option<StyleChain<'a>>,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         if let Some(Some(span)) = local.interruption::<DocumentElem>() {
             if self.doc.is_none() {
                 bail!(span, "document set rules are not allowed inside of containers");
@@ -419,7 +419,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         Ok(())
     }
 
-    fn interrupt_list(&mut self) -> SourceResult<()> {
+    fn interrupt_list(&mut self) -> SourceResults<()> {
         if !self.list.items.is_empty() {
             let staged = mem::take(&mut self.list.staged);
             let (list, styles) = mem::take(&mut self.list).finish();
@@ -432,7 +432,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         Ok(())
     }
 
-    fn interrupt_par(&mut self) -> SourceResult<()> {
+    fn interrupt_par(&mut self) -> SourceResults<()> {
         self.interrupt_list()?;
         if !self.par.0.is_empty() {
             let (par, styles) = mem::take(&mut self.par).finish();
@@ -443,7 +443,7 @@ impl<'a, 'v, 't> Builder<'a, 'v, 't> {
         Ok(())
     }
 
-    fn interrupt_page(&mut self, styles: Option<StyleChain<'a>>) -> SourceResult<()> {
+    fn interrupt_page(&mut self, styles: Option<StyleChain<'a>>) -> SourceResults<()> {
         self.interrupt_par()?;
         let Some(doc) = &mut self.doc else { return Ok(()) };
         if !self.flow.0.is_empty() || (doc.keep_next && styles.is_some()) {

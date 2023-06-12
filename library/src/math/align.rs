@@ -9,7 +9,7 @@ pub struct AlignPointElem {}
 
 impl LayoutMath for AlignPointElem {
     #[tracing::instrument(skip(ctx))]
-    fn layout_math(&self, ctx: &mut MathContext) -> SourceResult<()> {
+    fn layout_math(&self, ctx: &mut MathContext) -> SourceResults<()> {
         ctx.push(MathFragment::Align);
         Ok(())
     }

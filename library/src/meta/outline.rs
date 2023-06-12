@@ -186,7 +186,7 @@ pub struct OutlineElem {
 
 impl Show for OutlineElem {
     #[tracing::instrument(name = "OutlineElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let mut seq = vec![ParbreakElem::new().pack()];
         // Build the outline title.
         if let Some(title) = self.title(styles) {
@@ -284,7 +284,7 @@ impl LocalName for OutlineElem {
 /// `#outline()` element.
 pub trait Outlinable: Refable {
     /// Produce an outline item for this element.
-    fn outline(&self, vt: &mut Vt) -> SourceResult<Option<Content>>;
+    fn outline(&self, vt: &mut Vt) -> SourceResults<Option<Content>>;
 
     /// Returns the nesting level of this element.
     fn level(&self) -> NonZeroUsize {
@@ -306,7 +306,7 @@ impl OutlineIndent {
         ancestors: &Vec<&Content>,
         seq: &mut Vec<Content>,
         span: Span,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         match indent {
             // 'none' | 'false' => no indenting
             None | Some(Smart::Custom(OutlineIndent::Bool(false))) => {}
@@ -454,7 +454,7 @@ impl OutlineEntry {
         span: Span,
         elem: Content,
         fill: Option<Content>,
-    ) -> SourceResult<Option<Self>> {
+    ) -> SourceResults<Option<Self>> {
         let Some(outlinable) = elem.with::<dyn Outlinable>() else {
             bail!(span, "cannot outline {}", elem.func().name());
         };
@@ -468,7 +468,7 @@ impl OutlineEntry {
 }
 
 impl Show for OutlineEntry {
-    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         let mut seq = vec![];
         let elem = self.element();
 

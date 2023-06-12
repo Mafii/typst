@@ -36,7 +36,7 @@ pub struct DocumentElem {
 }
 
 impl Construct for DocumentElem {
-    fn construct(_: &mut Vm, args: &mut Args) -> SourceResult<Content> {
+    fn construct(_: &mut Vm, args: &mut Args) -> SourceResults<Content> {
         bail!(args.span, "can only be used in set rules")
     }
 }
@@ -44,7 +44,7 @@ impl Construct for DocumentElem {
 impl LayoutRoot for DocumentElem {
     /// Layout the document into a sequence of frames, one per page.
     #[tracing::instrument(name = "DocumentElem::layout_root", skip_all)]
-    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Document> {
+    fn layout_root(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Document> {
         tracing::info!("Document layout");
 
         let mut pages = vec![];

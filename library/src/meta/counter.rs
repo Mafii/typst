@@ -314,7 +314,7 @@ impl Counter {
         method: &str,
         mut args: Args,
         span: Span,
-    ) -> SourceResult<Value> {
+    ) -> SourceResults<Value> {
         let value = match method {
             "display" => self
                 .display(args.eat()?, args.named("both")?.unwrap_or(false))
@@ -339,7 +339,7 @@ impl Counter {
     }
 
     /// Get the value of the state at the given location.
-    pub fn at(&self, vt: &mut Vt, location: Location) -> SourceResult<CounterState> {
+    pub fn at(&self, vt: &mut Vt, location: Location) -> SourceResults<CounterState> {
         let sequence = self.sequence(vt)?;
         let offset = vt.introspector.query(&self.selector().before(location, true)).len();
         let (mut state, page) = sequence[offset].clone();
@@ -352,7 +352,7 @@ impl Counter {
     }
 
     /// Get the value of the state at the final location.
-    pub fn final_(&self, vt: &mut Vt, _: Location) -> SourceResult<CounterState> {
+    pub fn final_(&self, vt: &mut Vt, _: Location) -> SourceResults<CounterState> {
         let sequence = self.sequence(vt)?;
         let (mut state, page) = sequence.last().unwrap().clone();
         if self.is_page() {
@@ -363,7 +363,7 @@ impl Counter {
     }
 
     /// Get the current and final value of the state combined in one state.
-    pub fn both(&self, vt: &mut Vt, location: Location) -> SourceResult<CounterState> {
+    pub fn both(&self, vt: &mut Vt, location: Location) -> SourceResults<CounterState> {
         let sequence = self.sequence(vt)?;
         let offset = vt
             .introspector
@@ -394,7 +394,7 @@ impl Counter {
     fn sequence(
         &self,
         vt: &mut Vt,
-    ) -> SourceResult<EcoVec<(CounterState, NonZeroUsize)>> {
+    ) -> SourceResults<EcoVec<(CounterState, NonZeroUsize)>> {
         self.sequence_impl(
             vt.world,
             TrackedMut::reborrow_mut(&mut vt.tracer),
@@ -411,7 +411,7 @@ impl Counter {
         tracer: TrackedMut<Tracer>,
         locator: Tracked<Locator>,
         introspector: Tracked<Introspector>,
-    ) -> SourceResult<EcoVec<(CounterState, NonZeroUsize)>> {
+    ) -> SourceResults<EcoVec<(CounterState, NonZeroUsize)>> {
         let mut locator = Locator::chained(locator);
         let mut vt = Vt { world, tracer, locator: &mut locator, introspector };
         let mut state = CounterState(match &self.0 {
@@ -550,7 +550,7 @@ pub struct CounterState(pub SmallVec<[usize; 3]>);
 
 impl CounterState {
     /// Advance the counter and return the numbers for the given heading.
-    pub fn update(&mut self, vt: &mut Vt, update: CounterUpdate) -> SourceResult<()> {
+    pub fn update(&mut self, vt: &mut Vt, update: CounterUpdate) -> SourceResults<()> {
         match update {
             CounterUpdate::Set(state) => *self = state,
             CounterUpdate::Step(level) => self.step(level, 1),
@@ -581,7 +581,7 @@ impl CounterState {
     }
 
     /// Display the counter state with a numbering.
-    pub fn display(&self, vt: &mut Vt, numbering: &Numbering) -> SourceResult<Content> {
+    pub fn display(&self, vt: &mut Vt, numbering: &Numbering) -> SourceResults<Content> {
         Ok(numbering.apply_vt(vt, &self.0)?.display())
     }
 }
@@ -617,7 +617,7 @@ struct DisplayElem {
 
 impl Show for DisplayElem {
     #[tracing::instrument(name = "DisplayElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         if !vt.introspector.init() {
             return Ok(Content::empty());
         }
@@ -669,7 +669,7 @@ struct UpdateElem {
 
 impl Show for UpdateElem {
     #[tracing::instrument(name = "UpdateElem::show", skip(self))]
-    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, _: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         Ok(Content::empty())
     }
 }

@@ -44,7 +44,7 @@ impl Layout for StackElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let mut layouter = StackLayouter::new(self.dir(styles), regions, styles);
 
         // Spacing to insert before the next block.
@@ -189,7 +189,7 @@ impl<'a> StackLayouter<'a> {
         vt: &mut Vt,
         block: &Content,
         styles: StyleChain,
-    ) -> SourceResult<()> {
+    ) -> SourceResults<()> {
         if self.regions.is_full() {
             self.finish_region();
         }

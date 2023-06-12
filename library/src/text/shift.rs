@@ -46,7 +46,7 @@ pub struct SubElem {
 
 impl Show for SubElem {
     #[tracing::instrument(name = "SubElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let body = self.body();
         let mut transformed = None;
         if self.typographic(styles) {
@@ -109,7 +109,7 @@ pub struct SuperElem {
 
 impl Show for SuperElem {
     #[tracing::instrument(name = "SuperElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         let body = self.body();
         let mut transformed = None;
         if self.typographic(styles) {

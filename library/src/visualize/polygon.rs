@@ -49,7 +49,7 @@ impl Layout for PolygonElem {
         _: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let points: Vec<Point> = self
             .vertices()
             .iter()

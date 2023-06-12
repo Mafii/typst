@@ -125,7 +125,7 @@ impl Layout for ListElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         let indent = self.indent(styles);
         let body_indent = self.body_indent(styles);
         let gutter = if self.tight(styles) {
@@ -193,7 +193,7 @@ pub enum ListMarker {
 
 impl ListMarker {
     /// Resolve the marker for the given depth.
-    fn resolve(&self, vt: &mut Vt, depth: usize) -> SourceResult<Content> {
+    fn resolve(&self, vt: &mut Vt, depth: usize) -> SourceResults<Content> {
         Ok(match self {
             Self::Content(list) => {
                 list.get(depth).or(list.last()).cloned().unwrap_or_default()

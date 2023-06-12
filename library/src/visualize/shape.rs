@@ -139,7 +139,7 @@ impl Layout for RectElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         layout(
             vt,
             styles,
@@ -248,7 +248,7 @@ impl Layout for SquareElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         layout(
             vt,
             styles,
@@ -329,7 +329,7 @@ impl Layout for EllipseElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         layout(
             vt,
             styles,
@@ -435,7 +435,7 @@ impl Layout for CircleElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         layout(
             vt,
             styles,
@@ -469,7 +469,7 @@ fn layout(
     outset: Sides<Rel<Abs>>,
     radius: Corners<Rel<Abs>>,
     span: Span,
-) -> SourceResult<Fragment> {
+) -> SourceResults<Fragment> {
     let resolved = sizing
         .zip(regions.base())
         .map(|(s, r)| s.map(|v| v.resolve(styles).relative_to(r)));

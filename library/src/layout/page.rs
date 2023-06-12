@@ -302,7 +302,7 @@ impl PageElem {
         vt: &mut Vt,
         styles: StyleChain,
         mut number: NonZeroUsize,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         tracing::info!("Page layout");
 
         // When one of the lengths is infinite the page fits its content along
@@ -623,7 +623,7 @@ pub enum Marginal {
 
 impl Marginal {
     /// Resolve the marginal based on the page number.
-    pub fn resolve(&self, vt: &mut Vt, page: usize) -> SourceResult<Content> {
+    pub fn resolve(&self, vt: &mut Vt, page: usize) -> SourceResults<Content> {
         Ok(match self {
             Self::Content(content) => content.clone(),
             Self::Func(func) => func.call_vt(vt, [page])?.display(),

@@ -23,7 +23,7 @@ pub fn read(
     path: Spanned<EcoString>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Str> {
+) -> SourceResults<Str> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;
@@ -64,7 +64,7 @@ pub fn csv(
     delimiter: Delimiter,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Array> {
+) -> SourceResults<Array> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;
@@ -175,7 +175,7 @@ pub fn json(
     path: Spanned<EcoString>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;
@@ -241,7 +241,7 @@ pub fn toml(
     path: Spanned<EcoString>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;
@@ -350,7 +350,7 @@ pub fn yaml(
     path: Spanned<EcoString>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;
@@ -453,7 +453,7 @@ pub fn xml(
     path: Spanned<EcoString>,
     /// The virtual machine.
     vm: &mut Vm,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let Spanned { v: path, span } = path;
     let path = vm.locate(&path).at(span)?;
     let data = vm.world().file(&path).at(span)?;

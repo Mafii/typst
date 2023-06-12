@@ -12,7 +12,7 @@ use comemo::Tracked;
 use crate::syntax::{ErrorPos, Span, Spanned};
 use crate::World;
 
-/// Early-return with a [`StrResult`] or [`SourceResult`].
+/// Early-return with a [`StrResult`] or [`SourceResults`].
 #[macro_export]
 #[doc(hidden)]
 macro_rules! __bail {
@@ -57,7 +57,9 @@ pub use crate::__error as error;
 pub use ecow::{eco_format, EcoString};
 
 /// A result that can carry multiple source errors.
-pub type SourceResult<T> = Result<T, Box<Vec<SourceError>>>;
+pub type SourceResults<T> = Result<T, Box<Vec<SourceError>>>;
+
+
 
 /// An error in a source file.
 ///
@@ -143,7 +145,7 @@ impl Display for Tracepoint {
     }
 }
 
-/// Enrich a [`SourceResult`] with a tracepoint.
+/// Enrich a [`SourceResults`] with a tracepoint.
 pub trait Trace<T> {
     /// Add the tracepoint to all errors that lie outside the `span`.
     fn trace<F>(self, world: Tracked<dyn World + '_>, make_point: F, span: Span) -> Self
@@ -151,7 +153,7 @@ pub trait Trace<T> {
         F: Fn() -> Tracepoint;
 }
 
-impl<T> Trace<T> for SourceResult<T> {
+impl<T> Trace<T> for SourceResults<T> {
     fn trace<F>(self, world: Tracked<dyn World + '_>, make_point: F, span: Span) -> Self
     where
         F: Fn() -> Tracepoint,
@@ -178,23 +180,23 @@ impl<T> Trace<T> for SourceResult<T> {
 /// A result type with a string error message.
 pub type StrResult<T> = Result<T, EcoString>;
 
-/// Convert a [`StrResult`] to a [`SourceResult`] by adding span information.
+/// Convert a [`StrResult`] to a [`SourceResults`] by adding span information.
 pub trait At<T> {
     /// Add the span information.
-    fn at(self, span: Span) -> SourceResult<T>;
+    fn at(self, span: Span) -> SourceResults<T>;
 }
 
 impl<T, S> At<T> for Result<T, S>
 where
     S: Into<EcoString>,
 {
-    fn at(self, span: Span) -> SourceResult<T> {
+    fn at(self, span: Span) -> SourceResults<T> {
         self.map_err(|message| Box::new(vec![SourceError::new(span, message)]))
     }
 }
 
 pub trait WithHint<T, H> {
-    fn at_with_hint(self, span: Span, hint: H) -> SourceResult<T>;
+    fn at_with_hint(self, span: Span, hint: H) -> SourceResults<T>;
 }
 
 impl<T, H, S> WithHint<T, H> for Result<T, S>
@@ -202,7 +204,7 @@ where
     S: Into<EcoString>,
     H: Into<EcoString>,
 {
-    fn at_with_hint(self, span: Span, hint: H) -> SourceResult<T> {
+    fn at_with_hint(self, span: Span, hint: H) -> SourceResults<T> {
         self.map_err(|message| {
             Box::new(vec![SourceError::new(span, message).with_hint(hint)])
         })

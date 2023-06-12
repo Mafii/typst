@@ -72,7 +72,7 @@ struct LocateElem {
 
 impl Show for LocateElem {
     #[tracing::instrument(name = "LocateElem::show", skip(self, vt))]
-    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, _: StyleChain) -> SourceResults<Content> {
         if !vt.introspector.init() {
             return Ok(Content::empty());
         }
@@ -127,7 +127,7 @@ struct StyleElem {
 
 impl Show for StyleElem {
     #[tracing::instrument(name = "StyleElem::show", skip_all)]
-    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResult<Content> {
+    fn show(&self, vt: &mut Vt, styles: StyleChain) -> SourceResults<Content> {
         Ok(self.func().call_vt(vt, [styles.to_map()])?.display())
     }
 }
@@ -209,7 +209,7 @@ impl Layout for LayoutElem {
         vt: &mut Vt,
         styles: StyleChain,
         regions: Regions,
-    ) -> SourceResult<Fragment> {
+    ) -> SourceResults<Fragment> {
         // Gets the current region's base size, which will be the size of the
         // outer container, or of the page if there is no such container.
         let Size { x, y } = regions.base();

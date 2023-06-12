@@ -101,7 +101,7 @@ pub fn pow(
     exponent: Spanned<Num>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<Num> {
+) -> SourceResults<Num> {
     match exponent.v {
         _ if exponent.v.float() == 0.0 && base.float() == 0.0 => {
             bail!(span, "zero to the power of zero is undefined")
@@ -154,7 +154,7 @@ pub fn exp(
     exponent: Spanned<Num>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<f64> {
+) -> SourceResults<f64> {
     match exponent.v {
         Num::Int(i) if i32::try_from(i).is_err() => {
             bail!(exponent.span, "exponent is too large")
@@ -187,7 +187,7 @@ pub fn exp(
 pub fn sqrt(
     /// The number whose square root to calculate. Must be non-negative.
     value: Spanned<Num>,
-) -> SourceResult<f64> {
+) -> SourceResults<f64> {
     if value.v.float() < 0.0 {
         bail!(value.span, "cannot take square root of negative number");
     }
@@ -285,7 +285,7 @@ pub fn tan(
 pub fn asin(
     /// The number whose arcsine to calculate. Must be between -1 and 1.
     value: Spanned<Num>,
-) -> SourceResult<Angle> {
+) -> SourceResults<Angle> {
     let val = value.v.float();
     if val < -1.0 || val > 1.0 {
         bail!(value.span, "value must be between -1 and 1");
@@ -307,7 +307,7 @@ pub fn asin(
 pub fn acos(
     /// The number whose arcsine to calculate. Must be between -1 and 1.
     value: Spanned<Num>,
-) -> SourceResult<Angle> {
+) -> SourceResults<Angle> {
     let val = value.v.float();
     if val < -1.0 || val > 1.0 {
         bail!(value.span, "value must be between -1 and 1");
@@ -448,7 +448,7 @@ pub fn log(
     base: Spanned<f64>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<f64> {
+) -> SourceResults<f64> {
     let number = value.v.float();
     if number <= 0.0 {
         bail!(value.span, "value must be strictly positive")
@@ -490,7 +490,7 @@ pub fn ln(
     value: Spanned<Num>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<f64> {
+) -> SourceResults<f64> {
     let number = value.v.float();
     if number <= 0.0 {
         bail!(value.span, "value must be strictly positive")
@@ -801,7 +801,7 @@ pub fn clamp(
     min: Num,
     /// The inclusive maximum value.
     max: Spanned<Num>,
-) -> SourceResult<Num> {
+) -> SourceResults<Num> {
     if max.v.float() < min.float() {
         bail!(max.span, "max must be greater than or equal to min")
     }
@@ -826,7 +826,7 @@ pub fn min(
     values: Vec<Spanned<Value>>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     minmax(span, values, Ordering::Less)
 }
 
@@ -848,7 +848,7 @@ pub fn max(
     values: Vec<Spanned<Value>>,
     /// The callsite span.
     span: Span,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     minmax(span, values, Ordering::Greater)
 }
 
@@ -857,7 +857,7 @@ fn minmax(
     span: Span,
     values: Vec<Spanned<Value>>,
     goal: Ordering,
-) -> SourceResult<Value> {
+) -> SourceResults<Value> {
     let mut iter = values.into_iter();
     let Some(Spanned { v: mut extremum, ..}) = iter.next() else {
         bail!(span, "expected at least one value");
@@ -927,7 +927,7 @@ pub fn rem(
     dividend: Num,
     /// The divisor of the remainder.
     divisor: Spanned<Num>,
-) -> SourceResult<Num> {
+) -> SourceResults<Num> {
     if divisor.v.float() == 0.0 {
         bail!(divisor.span, "divisor must not be zero");
     }
@@ -950,7 +950,7 @@ pub fn quo(
     dividend: Num,
     /// The divisor of the quotient.
     divisor: Spanned<Num>,
-) -> SourceResult<i64> {
+) -> SourceResults<i64> {
     if divisor.v.float() == 0.0 {
         bail!(divisor.span, "divisor must not be zero");
     }
