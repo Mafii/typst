@@ -671,21 +671,8 @@ fn parse_metadata(source: &Source) -> Metadata {
 
     let lines: Vec<_> = source.text().lines().map(str::trim).collect();
     for (i, line) in lines.iter().enumerate() {
-        if line.starts_with("// Ref: false") {
-            compare_ref = Some(false);
-        }
-
-        if line.starts_with("// Ref: true") {
-            compare_ref = Some(true);
-        }
-
-        if line.starts_with("// Hints: false") {
-            validate_hints = Some(false);
-        }
-
-        if line.starts_with("// Hints: true") {
-            validate_hints = Some(true);
-        }
+        compare_ref = has_metadata_flag(line, "Ref").or(compare_ref);
+        validate_hints = has_metadata_flag(line, "Hints").or(validate_hints);
 
         fn num(s: &mut Scanner) -> usize {
             s.eat_while(char::is_numeric).parse().unwrap()
@@ -722,6 +709,16 @@ fn parse_metadata(source: &Source) -> Metadata {
         validate_hints,
         expected_errors: errors,
         expected_hints: hints,
+    }
+}
+
+fn has_metadata_flag(line: &str, flag: &str) -> Option<bool> {
+    if line.starts_with(&format!("// {flag}: true")) {
+        Some(true)
+    } else if line.starts_with(&format!("// {flag}: false")) {
+        Some(false)
+    } else {
+        None
     }
 }
 
