@@ -22,7 +22,7 @@ use walkdir::WalkDir;
 
 use typst::diag::{bail, FileError, FileResult, StrResult};
 use typst::doc::{Document, Frame, FrameItem, Meta};
-use typst::eval::{func, Datetime, Library, NoneValue, Value};
+use typst::eval::{eco_format, func, Datetime, Library, NoneValue, Value};
 use typst::font::{Font, FontBook};
 use typst::geom::{Abs, Color, RgbaColor, Smart};
 use typst::syntax::{Source, SourceId, Span, SyntaxNode};
@@ -373,6 +373,7 @@ fn test(
     let mut frames = vec![];
     let mut line = 0;
     let mut compare_ref = true;
+    let mut validate_hints = true;
     let mut compare_ever = false;
     let mut rng = LinearShift::new();
 
@@ -400,9 +401,8 @@ fn test(
 
         if is_header {
             for line in part.lines() {
-                if line.starts_with("// Ref: false") {
-                    compare_ref = false;
-                }
+                compare_ref = get_metadata_flag(line, "Ref").unwrap_or(compare_ref);
+                validate_hints = get_metadata_flag(line, "Hints").unwrap_or(compare_ref);
             }
         } else {
             let (part_ok, compare_here, part_frames) = test_part(
@@ -412,6 +412,7 @@ fn test(
                 part.into(),
                 i,
                 compare_ref,
+                validate_hints,
                 line,
                 &mut rng,
             );
@@ -506,6 +507,7 @@ fn test_part(
     text: String,
     i: usize,
     compare_ref: bool,
+    validate_hints: bool,
     line: usize,
     rng: &mut LinearShift,
 ) -> (bool, bool, Vec<Frame>) {
@@ -519,11 +521,13 @@ fn test_part(
 
     let Metadata {
         compare_ref: local_compare_ref,
-        validate_hints,
+        validate_hints: local_validate_hints,
         expected_errors: mut ref_errors,
         expected_hints: mut ref_hints,
     } = parse_metadata(source);
+
     let compare_ref = local_compare_ref.unwrap_or(compare_ref);
+    let validate_hints = local_validate_hints.unwrap_or(validate_hints);
 
     ok &= test_spans(output, source.root());
     ok &= test_reparse(output, world.source(id).text(), i, rng);
@@ -597,7 +601,7 @@ fn test_part(
         }
     }
 
-    if validate_hints.unwrap_or(true) {
+    if validate_hints {
         let mut hints: Vec<(Range<usize>, String)> = actual_errors
             .clone()
             .into_iter()
@@ -671,8 +675,8 @@ fn parse_metadata(source: &Source) -> Metadata {
 
     let lines: Vec<_> = source.text().lines().map(str::trim).collect();
     for (i, line) in lines.iter().enumerate() {
-        compare_ref = has_metadata_flag(line, "Ref").or(compare_ref);
-        validate_hints = has_metadata_flag(line, "Hints").or(validate_hints);
+        compare_ref = get_metadata_flag(line, "Ref").or(compare_ref);
+        validate_hints = get_metadata_flag(line, "Hints").or(validate_hints);
 
         fn num(s: &mut Scanner) -> usize {
             s.eat_while(char::is_numeric).parse().unwrap()
@@ -690,7 +694,7 @@ fn parse_metadata(source: &Source) -> Metadata {
         };
 
         let error_stripped_line = line.strip_prefix("// Error: ");
-        let Some(rest) = error_stripped_line.or_else(|| line.strip_prefix("// Hint: ")) else { continue; };
+        let Some(rest) = error_stripped_line.or_else(|| line.strip_prefix("// Hints: ")) else { continue; };
         let mut s = Scanner::new(rest);
         let start = pos(&mut s);
         let end = if s.eat_if('-') { pos(&mut s) } else { start };
@@ -712,10 +716,10 @@ fn parse_metadata(source: &Source) -> Metadata {
     }
 }
 
-fn has_metadata_flag(line: &str, flag: &str) -> Option<bool> {
-    if line.starts_with(&format!("// {flag}: true")) {
+fn get_metadata_flag(line: &str, flag: &str) -> Option<bool> {
+    if line.starts_with((eco_format!("// {flag}: true")).as_str()) {
         Some(true)
-    } else if line.starts_with(&format!("// {flag}: false")) {
+    } else if line.starts_with(eco_format!("// {flag}: false").as_str()) {
         Some(false)
     } else {
         None
