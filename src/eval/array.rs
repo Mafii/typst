@@ -345,7 +345,7 @@ impl Array {
                 (Ok(a), Ok(b)) => {
                     typst::eval::ops::compare(&a, &b).unwrap_or_else(|err| {
                         if result.is_ok() {
-                            result = Err(err).at(span);
+                            result = Err(err).at(span).map_err(|err| Box::new(vec![err]));
                         }
                         Ordering::Equal
                     })

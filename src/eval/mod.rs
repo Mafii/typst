@@ -713,7 +713,7 @@ impl Eval for ast::MathIdent {
 
     #[tracing::instrument(name = "MathIdent::eval", skip_all)]
     fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
-        vm.scopes.get_in_math(self).cloned().at(self.span())
+        Ok(vm.scopes.get_in_math(self).cloned().at(self.span())?)
     }
 }
 
@@ -776,7 +776,7 @@ impl Eval for ast::Ident {
 
     #[tracing::instrument(name = "Ident::eval", skip_all)]
     fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
-        vm.scopes.get(self).cloned().at(self.span())
+        Ok(vm.scopes.get(self).cloned().at(self.span())?)
     }
 }
 
@@ -995,7 +995,7 @@ impl Eval for ast::Unary {
             ast::UnOp::Neg => ops::neg(value),
             ast::UnOp::Not => ops::not(value),
         };
-        result.at(self.span())
+        Ok(result.at(self.span())?)
     }
 }
 
@@ -1045,7 +1045,7 @@ impl ast::Binary {
         }
 
         let rhs = self.rhs().eval(vm)?;
-        op(lhs, rhs).at(self.span())
+        Ok(op(lhs, rhs).at(self.span())?)
     }
 
     /// Apply an assignment operation.
@@ -1081,7 +1081,7 @@ impl Eval for ast::FieldAccess {
     fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let value = self.target().eval(vm)?;
         let field = self.field();
-        value.field(&field).at(field.span())
+        Ok(value.field(&field).at(field.span())?)
     }
 }
 
@@ -1492,7 +1492,7 @@ impl Eval for ast::ShowRule {
     fn eval(&self, vm: &mut Vm) -> SourceResults<Self::Output> {
         let selector = self
             .selector()
-            .map(|sel| sel.eval(vm)?.cast::<ShowableSelector>().at(sel.span()))
+            .map(|sel| SourceResults::Ok(sel.eval(vm)?.cast::<ShowableSelector>().at(sel.span())?))
             .transpose()?
             .map(|selector| selector.0);
 
@@ -1853,7 +1853,7 @@ impl Access for ast::Parenthesized {
 
 impl Access for ast::FieldAccess {
     fn access<'a>(&self, vm: &'a mut Vm) -> SourceResults<&'a mut Value> {
-        self.access_dict(vm)?.at_mut(&self.field().take()).at(self.span())
+        Ok(self.access_dict(vm)?.at_mut(&self.field().take()).at(self.span())?)
     }
 }
 

@@ -59,7 +59,8 @@ pub use ecow::{eco_format, EcoString};
 /// A result that can carry multiple source errors.
 pub type SourceResults<T> = Result<T, Box<Vec<SourceError>>>;
 
-
+/// A result that can carry a source error.
+pub type SourceResult<T> = Result<T, SourceError>;
 
 /// An error in a source file.
 ///
@@ -75,7 +76,7 @@ pub struct SourceError {
     pub message: EcoString,
     /// The trace of function calls leading to the error.
     pub trace: Vec<Spanned<Tracepoint>>,
-    /// Additonal hints to the user, indicating how this error could be avoided or worked around.
+    /// Additional hints to the user, indicating how this error could be avoided or worked around.
     pub hints: Vec<EcoString>,
 }
 
@@ -180,33 +181,39 @@ impl<T> Trace<T> for SourceResults<T> {
 /// A result type with a string error message.
 pub type StrResult<T> = Result<T, EcoString>;
 
-/// Convert a [`StrResult`] to a [`SourceResults`] by adding span information.
+impl From<SourceError> for Box<Vec<SourceError>> {
+    fn from(error: SourceError) -> Self {
+        Box::new(vec![error])
+    }
+}
+
+/// Convert a [`StrResult`] to a [`SourceResult`] by adding span information.
 pub trait At<T> {
     /// Add the span information.
-    fn at(self, span: Span) -> SourceResults<T>;
+    fn at(self, span: Span) -> SourceResult<T>;
 }
 
 impl<T, S> At<T> for Result<T, S>
 where
     S: Into<EcoString>,
 {
-    fn at(self, span: Span) -> SourceResults<T> {
-        self.map_err(|message| Box::new(vec![SourceError::new(span, message)]))
+    fn at(self, span: Span) -> SourceResult<T> {
+        self.map_err(|message| SourceError::new(span, message))
     }
 }
 
 pub trait WithHint<T, H> {
-    fn at_with_hint(self, span: Span, hint: H) -> SourceResults<T>;
+    fn with_hint(self, hint: H) -> SourceResult<T>;
 }
 
-impl<T, H, S> WithHint<T, H> for Result<T, S>
+impl<T, S> WithHint<T, S> for SourceResult<T>
 where
     S: Into<EcoString>,
-    H: Into<EcoString>,
+    S: Into<EcoString>,
 {
-    fn at_with_hint(self, span: Span, hint: H) -> SourceResults<T> {
-        self.map_err(|message| {
-            Box::new(vec![SourceError::new(span, message).with_hint(hint)])
+    fn with_hint(self, hint: S) -> SourceResult<T> {
+        self.map_err(|error| {
+            error.with_hint(hint)
         })
     }
 }

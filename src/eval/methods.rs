@@ -17,7 +17,7 @@ pub fn call(
     span: Span,
 ) -> SourceResults<Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Ok(Err(missing_method(name, method)).at(span)?);
 
     let output = match value {
         Value::Color(color) => match method {
@@ -218,7 +218,7 @@ pub fn call_mut(
     span: Span,
 ) -> SourceResults<Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Ok(Err(missing_method(name, method)).at(span)?);
     let mut output = Value::None;
 
     match value {
@@ -255,7 +255,7 @@ pub fn call_access<'a>(
     span: Span,
 ) -> SourceResults<&'a mut Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Ok(Err(missing_method(name, method)).at(span)?);
 
     let slot = match value {
         Value::Array(array) => match method {

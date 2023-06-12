@@ -184,13 +184,8 @@ impl Show for RefElem {
             .ok_or_else(|| {
                 eco_format!("cannot reference {0} without numbering", elem.func().name())
             })
-            .at_with_hint(
-                span,
-                eco_format!(
-                    "did you mean to use `#set {0}(numbering: \"1.\")`?",
-                    elem.func().name()
-                ),
-            )?;
+            .at(span)
+            .with_hint(eco_format!("did you mean to use `#set {0}(numbering: \"1.\")`?", elem.func().name()))?;
 
         let numbers = refable
             .counter()

@@ -59,7 +59,7 @@ impl Args {
             if slot.name.is_none() {
                 let value = self.items.remove(i).value;
                 let span = value.span;
-                return T::from_value(value).at(span).map(Some);
+                return Ok(T::from_value(value).at(span).map(Some)?);
             }
         }
         Ok(None)
@@ -108,7 +108,7 @@ impl Args {
             if slot.name.is_none() && T::castable(&slot.value.v) {
                 let value = self.items.remove(i).value;
                 let span = value.span;
-                return T::from_value(value).at(span).map(Some);
+                return Ok(T::from_value(value).at(span).map(Some)?);
             }
         }
         Ok(None)

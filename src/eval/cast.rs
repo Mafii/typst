@@ -145,7 +145,7 @@ impl<T: IntoValue> IntoResult for T {
 
 impl<T: IntoValue> IntoResult for StrResult<T> {
     fn into_result(self, span: Span) -> SourceResults<Value> {
-        self.map(IntoValue::into_value).at(span)
+        Ok(self.map(IntoValue::into_value).at(span)?)
     }
 }
 

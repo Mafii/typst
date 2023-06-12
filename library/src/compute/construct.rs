@@ -661,7 +661,7 @@ pub fn regex(
     /// ```{regex(`\d+\.\d+\.\d+`.text)}```.
     regex: Spanned<EcoString>,
 ) -> SourceResults<Regex> {
-    Regex::new(&regex.v).at(regex.span)
+    Ok(Regex::new(&regex.v).at(regex.span)?)
 }
 
 /// Create an array consisting of a sequence of numbers.
