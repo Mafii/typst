@@ -567,14 +567,32 @@ fn test_part(
         for error in errors.iter() {
             if !ref_errors.contains(error) {
                 write!(output, "    Not annotated | ").unwrap();
-                print_error(output, source, line, error);
+                print_message(
+                    output,
+                    source,
+                    line,
+                    PrintableMessage {
+                        range: &error.0,
+                        message: &error.1,
+                        kind: PrintableMessageKind::Error,
+                    },
+                );
             }
         }
 
         for error in ref_errors.iter() {
             if !errors.contains(error) {
                 write!(output, "    Not emitted   | ").unwrap();
-                print_error(output, source, line, error);
+                print_message(
+                    output,
+                    source,
+                    line,
+                    PrintableMessage {
+                        range: &error.0,
+                        message: &error.1,
+                        kind: PrintableMessageKind::Error,
+                    },
+                );
             }
         }
     }
@@ -604,14 +622,32 @@ fn test_part(
             for hint in hints.iter() {
                 if !ref_hints.contains(hint) {
                     write!(output, "    Not annotated | ").unwrap();
-                    print_hint(output, source, line, hint);
+                    print_message(
+                        output,
+                        source,
+                        line,
+                        PrintableMessage {
+                            range: &hint.0,
+                            message: &hint.1,
+                            kind: PrintableMessageKind::Hint,
+                        },
+                    );
                 }
             }
 
             for hint in ref_hints.iter() {
                 if !hints.contains(hint) {
                     write!(output, "    Not emitted   | ").unwrap();
-                    print_hint(output, source, line, hint);
+                    print_message(
+                        output,
+                        source,
+                        line,
+                        PrintableMessage {
+                            range: &hint.0,
+                            message: &hint.1,
+                            kind: PrintableMessageKind::Hint,
+                        },
+                    );
                 }
             }
         }
@@ -689,31 +725,33 @@ fn parse_metadata(source: &Source) -> Metadata {
     }
 }
 
-fn print_error(
-    output: &mut String,
-    source: &Source,
-    line: usize,
-    (range, message): &(Range<usize>, String),
-) {
-    let start_line = 1 + line + source.byte_to_line(range.start).unwrap();
-    let start_col = 1 + source.byte_to_column(range.start).unwrap();
-    let end_line = 1 + line + source.byte_to_line(range.end).unwrap();
-    let end_col = 1 + source.byte_to_column(range.end).unwrap();
-    writeln!(output, "Error: {start_line}:{start_col}-{end_line}:{end_col}: {message}")
-        .unwrap();
+struct PrintableMessage<'a> {
+    range: &'a Range<usize>,
+    message: &'a String,
+    kind: PrintableMessageKind,
 }
 
-fn print_hint(
+enum PrintableMessageKind {
+    Error,
+    Hint,
+}
+
+fn print_message(
     output: &mut String,
     source: &Source,
     line: usize,
-    (range, message): &(Range<usize>, String),
+    message: PrintableMessage,
 ) {
-    let start_line = 1 + line + source.byte_to_line(range.start).unwrap();
-    let start_col = 1 + source.byte_to_column(range.start).unwrap();
-    let end_line = 1 + line + source.byte_to_line(range.end).unwrap();
-    let end_col = 1 + source.byte_to_column(range.end).unwrap();
-    writeln!(output, "Hint: {start_line}:{start_col}-{end_line}:{end_col}: {message}")
+    let start_line = 1 + line + source.byte_to_line(message.range.start).unwrap();
+    let start_col = 1 + source.byte_to_column(message.range.start).unwrap();
+    let end_line = 1 + line + source.byte_to_line(message.range.end).unwrap();
+    let end_col = 1 + source.byte_to_column(message.range.end).unwrap();
+    let text: &String = message.message;
+    let kind = match message.kind {
+        PrintableMessageKind::Error => "Error",
+        PrintableMessageKind::Hint => "Hint",
+    };
+    writeln!(output, "{kind}: {start_line}:{start_col}-{end_line}:{end_col}: {text}")
         .unwrap();
 }
 
