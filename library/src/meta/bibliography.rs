@@ -7,6 +7,7 @@ use ecow::{eco_vec, EcoVec};
 use hayagriva::io::{BibLaTeXError, YamlBibliographyError};
 use hayagriva::style::{self, Brackets, Citation, Database, DisplayString, Formatting};
 use hayagriva::Entry;
+use typst::diag::ToSourceResult;
 use typst::util::option_eq;
 
 use super::{LinkElem, LocalName, RefElem};
@@ -365,6 +366,7 @@ impl Show for CiteElem {
                 .flatten()
                 .ok_or("bibliography does not contain this key")
                 .at(self.span())
+                .into_source_result()
         }))
     }
 }

@@ -62,16 +62,19 @@ use ecow::{EcoString, EcoVec};
 use unicode_segmentation::UnicodeSegmentation;
 
 use self::func::{CapturesVisitor, Closure};
-use crate::model::{
-    Content, Introspector, Label, Locator, Recipe, ShowableSelector, Styles, Transform,
-    Unlabellable, Vt,
-};
 use crate::syntax::ast::AstNode;
 use crate::syntax::{
     ast, parse_code, Source, SourceId, Span, Spanned, SyntaxKind, SyntaxNode,
 };
 use crate::util::PathExt;
 use crate::World;
+use crate::{
+    diag::ToSourceResult,
+    model::{
+        Content, Introspector, Label, Locator, Recipe, ShowableSelector, Styles,
+        Transform, Unlabellable, Vt,
+    },
+};
 use crate::{
     diag::{bail, error, At, SourceError, SourceResult, StrResult, Trace, Tracepoint},
     model::DelayedErrors,
@@ -718,7 +721,7 @@ impl Eval for ast::MathIdent {
 
     #[tracing::instrument(name = "MathIdent::eval", skip_all)]
     fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
-        vm.scopes.get_in_math(self).cloned().at(self.span())
+        Ok(vm.scopes.get_in_math(self).cloned().at(self.span())?)
     }
 }
 
@@ -781,7 +784,7 @@ impl Eval for ast::Ident {
 
     #[tracing::instrument(name = "Ident::eval", skip_all)]
     fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
-        vm.scopes.get(self).cloned().at(self.span())
+        Ok(vm.scopes.get(self).cloned().at(self.span())?)
     }
 }
 
@@ -949,7 +952,9 @@ impl Eval for ast::Array {
                 ast::ArrayItem::Spread(expr) => match expr.eval(vm)? {
                     Value::None => {}
                     Value::Array(array) => vec.extend(array.into_iter()),
-                    v => bail!(expr.span(), "cannot spread {} into array", v.type_name()),
+                    v => {
+                        bail!(expr.span(), "cannot spread {} into array", v.type_name())
+                    }
                 },
             }
         }
@@ -1000,7 +1005,7 @@ impl Eval for ast::Unary {
             ast::UnOp::Neg => ops::neg(value),
             ast::UnOp::Not => ops::not(value),
         };
-        result.at(self.span())
+        result.at(self.span()).into_source_result()
     }
 }
 
@@ -1050,7 +1055,7 @@ impl ast::Binary {
         }
 
         let rhs = self.rhs().eval(vm)?;
-        op(lhs, rhs).at(self.span())
+        op(lhs, rhs).at(self.span()).into_source_result()
     }
 
     /// Apply an assignment operation.
@@ -1086,7 +1091,7 @@ impl Eval for ast::FieldAccess {
     fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
         let value = self.target().eval(vm)?;
         let field = self.field();
-        value.field(&field).at(field.span())
+        value.field(&field).at(field.span()).into_source_result()
     }
 }
 
@@ -1497,7 +1502,12 @@ impl Eval for ast::ShowRule {
     fn eval(&self, vm: &mut Vm) -> SourceResult<Self::Output> {
         let selector = self
             .selector()
-            .map(|sel| sel.eval(vm)?.cast::<ShowableSelector>().at(sel.span()))
+            .map(|sel| {
+                sel.eval(vm)?
+                    .cast::<ShowableSelector>()
+                    .at(sel.span())
+                    .into_source_result()
+            })
             .transpose()?
             .map(|selector| selector.0);
 
@@ -1858,7 +1868,10 @@ impl Access for ast::Parenthesized {
 
 impl Access for ast::FieldAccess {
     fn access<'a>(&self, vm: &'a mut Vm) -> SourceResult<&'a mut Value> {
-        self.access_dict(vm)?.at_mut(&self.field().take()).at(self.span())
+        self.access_dict(vm)?
+            .at_mut(&self.field().take())
+            .at(self.span())
+            .into_source_result()
     }
 }
 

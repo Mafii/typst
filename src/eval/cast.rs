@@ -6,7 +6,7 @@ use std::ops::Add;
 use ecow::EcoString;
 
 use super::Value;
-use crate::diag::{At, SourceResult, StrResult};
+use crate::diag::{At, RichResult, SourceResult, StrResult};
 use crate::syntax::{Span, Spanned};
 use crate::util::separated_list;
 
@@ -69,6 +69,16 @@ impl<T: Reflect> Reflect for Spanned<T> {
 }
 
 impl<T: Reflect> Reflect for StrResult<T> {
+    fn describe() -> CastInfo {
+        T::describe()
+    }
+
+    fn castable(value: &Value) -> bool {
+        T::castable(value)
+    }
+}
+
+impl<T: Reflect> Reflect for RichResult<T> {
     fn describe() -> CastInfo {
         T::describe()
     }
@@ -145,7 +155,13 @@ impl<T: IntoValue> IntoResult for T {
 
 impl<T: IntoValue> IntoResult for StrResult<T> {
     fn into_result(self, span: Span) -> SourceResult<Value> {
-        self.map(IntoValue::into_value).at(span)
+        self.map(IntoValue::into_value).at(span).map_err(|err| err.into())
+    }
+}
+
+impl<T: IntoValue> IntoResult for RichResult<T> {
+    fn into_result(self, _: Span) -> SourceResult<Value> {
+        self.map(IntoValue::into_value).map_err(|err| err.into())
     }
 }
 

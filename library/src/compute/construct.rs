@@ -3,7 +3,10 @@ use std::str::FromStr;
 
 use time::{Month, PrimitiveDateTime};
 
-use typst::eval::{Datetime, Regex};
+use typst::{
+    diag::RichResult,
+    eval::{Datetime, Regex},
+};
 
 use crate::prelude::*;
 
@@ -660,7 +663,7 @@ pub fn regex(
     /// and extract its text to use it for your regular expressions:
     /// ```{regex(`\d+\.\d+\.\d+`.text)}```.
     regex: Spanned<EcoString>,
-) -> SourceResult<Regex> {
+) -> RichResult<Regex> {
     Regex::new(&regex.v).at(regex.span)
 }
 

@@ -12,11 +12,11 @@ use comemo::Tracked;
 use crate::syntax::{ErrorPos, Span, Spanned};
 use crate::World;
 
-/// Early-return with a [`StrResult`] or [`SourceResult`].
+/// Early-return with a [`StrResult`], [`RichResult`] or [`SourceResult`].
 ///
-/// If called with just a string and format args, returns with a
-/// `StrResult`. If called with a span, a string and format args, returns
-/// a `SourceResult`.
+/// If called with just a string and format args, returns a `StrResult`.
+/// If called with a span, a string and format args, returns a `RichResult`
+/// or a `SourceResult`, depending on the target.
 ///
 /// ```
 /// bail!("bailing with a {}", "string result");
@@ -30,14 +30,14 @@ macro_rules! __bail {
     };
 
     ($error:expr) => {
-        return Err(Box::new(vec![$error]))
+        return Err($error).map_err(|e|e.into())
     };
 
     ($span:expr, $fmt:literal $(, $arg:expr)* $(,)?) => {
-        return Err(Box::new(vec![$crate::diag::SourceError::new(
+        return Err($crate::diag::SourceError::new(
             $span,
             $crate::diag::eco_format!($fmt, $($arg),*),
-        )]))
+        ).into())
     };
 }
 
@@ -82,6 +82,8 @@ pub struct SourceError {
     pub message: EcoString,
     /// The trace of function calls leading to the error.
     pub trace: Vec<Spanned<Tracepoint>>,
+    /// Additonal hints to the user, indicating how this error could be avoided or worked around.
+    pub hints: Vec<EcoString>,
 }
 
 impl SourceError {
@@ -92,6 +94,7 @@ impl SourceError {
             pos: ErrorPos::Full,
             trace: vec![],
             message: message.into(),
+            hints: vec![],
         }
     }
 
@@ -111,6 +114,18 @@ impl SourceError {
             ErrorPos::Start => full.start..full.start,
             ErrorPos::End => full.end..full.end,
         }
+    }
+
+    /// Adds a user-facing hint to the error.
+    pub fn with_hint(mut self, hint: impl Into<EcoString>) -> Self {
+        self.hints.push(hint.into());
+        self
+    }
+}
+
+impl From<SourceError> for Box<Vec<SourceError>> {
+    fn from(value: SourceError) -> Self {
+        Box::new(vec![value])
     }
 }
 
@@ -179,18 +194,43 @@ impl<T> Trace<T> for SourceResult<T> {
 /// A result type with a string error message.
 pub type StrResult<T> = Result<T, EcoString>;
 
-/// Convert a [`StrResult`] to a [`SourceResult`] by adding span information.
+/// A result type with a detailed source error.
+pub type RichResult<T> = Result<T, SourceError>;
+
+/// Convert a [`StrResult`] to a [`RichResult`] by adding span information.
 pub trait At<T> {
     /// Add the span information.
-    fn at(self, span: Span) -> SourceResult<T>;
+    fn at(self, span: Span) -> RichResult<T>;
 }
 
 impl<T, S> At<T> for Result<T, S>
 where
     S: Into<EcoString>,
 {
-    fn at(self, span: Span) -> SourceResult<T> {
-        self.map_err(|message| Box::new(vec![SourceError::new(span, message)]))
+    fn at(self, span: Span) -> RichResult<T> {
+        self.map_err(|message| SourceError::new(span, message))
+    }
+}
+
+pub trait Hint<T> {
+    /// Add a user-directed hint to the error message.
+    fn with_hint(self, message: impl Into<EcoString>) -> RichResult<T>;
+}
+
+impl<T> Hint<T> for RichResult<T> {
+    fn with_hint(self, message: impl Into<EcoString>) -> RichResult<T> {
+        self.map_err(|e| e.with_hint(message))
+    }
+}
+
+pub trait ToSourceResult<T> {
+    /// Convert this result into a [`SourceResult`]
+    fn into_source_result(self) -> SourceResult<T>;
+}
+
+impl<T> ToSourceResult<T> for RichResult<T> {
+    fn into_source_result(self) -> SourceResult<T> {
+        self.map_err(|err| err.into())
     }
 }
 

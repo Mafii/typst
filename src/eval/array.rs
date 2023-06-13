@@ -5,7 +5,7 @@ use std::ops::{Add, AddAssign};
 use ecow::{eco_format, EcoString, EcoVec};
 
 use super::{ops, Args, CastInfo, FromValue, Func, IntoValue, Reflect, Value, Vm};
-use crate::diag::{At, SourceResult, StrResult};
+use crate::diag::{At, RichResult, SourceResult, StrResult, ToSourceResult};
 use crate::syntax::Span;
 use crate::util::pretty_array_like;
 
@@ -223,7 +223,7 @@ impl Array {
     }
 
     /// Calculates the product of the array's items
-    pub fn product(&self, default: Option<Value>, span: Span) -> SourceResult<Value> {
+    pub fn product(&self, default: Option<Value>, span: Span) -> RichResult<Value> {
         let mut acc = self
             .first()
             .map(|x| x.clone())
@@ -331,7 +331,7 @@ impl Array {
         span: Span,
         key: Option<Func>,
     ) -> SourceResult<Self> {
-        let mut result = Ok(());
+        let mut result: SourceResult<()> = Ok(());
         let mut vec = self.0.clone();
         let mut key_of = |x: Value| match &key {
             // NOTE: We are relying on `comemo`'s memoization of function
@@ -345,7 +345,7 @@ impl Array {
                 (Ok(a), Ok(b)) => {
                     typst::eval::ops::compare(&a, &b).unwrap_or_else(|err| {
                         if result.is_ok() {
-                            result = Err(err).at(span);
+                            result = Err(err).at(span).into_source_result();
                         }
                         Ordering::Equal
                     })
@@ -358,7 +358,7 @@ impl Array {
                 }
             }
         });
-        result.map(|_| vec.into())
+        Ok(result.map(|_| vec.into())?)
     }
 
     /// Repeat this array `n` times.

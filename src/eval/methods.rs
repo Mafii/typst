@@ -3,7 +3,7 @@
 use ecow::EcoString;
 
 use super::{Args, IntoValue, Str, Value, Vm};
-use crate::diag::{At, SourceResult};
+use crate::diag::{At, SourceResult, ToSourceResult};
 use crate::eval::Datetime;
 use crate::model::{Location, Selector};
 use crate::syntax::Span;
@@ -17,7 +17,7 @@ pub fn call(
     span: Span,
 ) -> SourceResult<Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Err(missing_method(name, method)).at(span).into_source_result();
 
     let output = match value {
         Value::Color(color) => match method {
@@ -218,7 +218,7 @@ pub fn call_mut(
     span: Span,
 ) -> SourceResult<Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Err(missing_method(name, method)).at(span).into_source_result();
     let mut output = Value::None;
 
     match value {
@@ -255,7 +255,7 @@ pub fn call_access<'a>(
     span: Span,
 ) -> SourceResult<&'a mut Value> {
     let name = value.type_name();
-    let missing = || Err(missing_method(name, method)).at(span);
+    let missing = || Err(missing_method(name, method)).at(span).into_source_result();
 
     let slot = match value {
         Value::Array(array) => match method {
